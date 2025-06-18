@@ -1,0 +1,105 @@
+.book-detail-container {
+  padding: 40px;
+  font-family: 'Segoe UI', sans-serif;
+}
+ 
+.book-back-link {
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+}
+ 
+.book-title {
+  font-size: 32px;
+  font-weight: bold;
+  margin: 10px 0;
+}
+ 
+.book-description {
+  font-size: 18px;
+  color: #444;
+  margin-bottom: 20px;
+}
+ 
+.book-specification-wrapper {
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+  margin-top: 20px;
+}
+ 
+.book-specs-box {
+  flex: 1;
+  background: #f9fbff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  padding: 20px;
+}
+ 
+.specs-heading {
+  font-size: 20px;
+  text-align: center;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+ 
+.specs-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+ 
+.specs-table th {
+  text-align: left;
+  padding: 10px;
+  width: 40%;
+  font-weight: 600;
+}
+ 
+.specs-table td {
+  padding: 10px;
+}
+ 
+.book-cover-box {
+  flex: 0.8;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+ 
+.book-cover-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+ 
+.book-actions {
+  margin-top: 30px;
+  display: flex;
+  gap: 20px;
+}
+ 
+.action-btn {
+  padding: 12px 24px;
+  font-size: 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+ 
+.action-btn.gray {
+  background: #eee;
+}
+ 
+.action-btn.blue {
+  background-color: #007bff;
+  color: #fff;
+}
+ 
+.action-btn.blue-outline {
+  background: #f0f7ff;
+  color: #007bff;
+  border: 2px solid #007bff;
+}

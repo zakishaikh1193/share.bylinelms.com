@@ -1,0 +1,136 @@
+/* 🔲 Modal Overlay */
+.addgrade-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(1px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition:  ease-in-out;
+}
+
+/* 🧩 Modal Box Container */
+.modal-content {
+  background-color: #ffffff; /* White background */
+  padding: 2rem 2.5rem;
+  border-radius: 14px;
+  width: 92%;
+  max-width: 440px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  position: relative;
+  font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
+  transition: all 0.3s ease;
+}
+
+/* 🧾 Modal Title */
+.modal-content h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1e293b;
+  text-align: center;
+}
+
+/* ❌ Close Button */
+.close-btn {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background-color: #f1f5f9;
+  color: #1f2937;
+}
+
+/* 🧮 Form Layout */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ✏️ Input Styling */
+form input {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background-color: #f9fafb;
+  color: #1f2937;
+  transition: all 0.2s ease;
+}
+
+form input:focus {
+  outline: none;
+  background-color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* 🔘 Button Group */
+form .button-group {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.8rem;
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* 🎯 Button Styles */
+form button {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  min-width: 110px;
+  transition: all 0.2s ease-in-out;
+}
+
+/* ✅ Submit Button */
+form button[type="submit"] {
+  background-color: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+form button[type="submit"]:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.3);
+}
+
+/* 🔙 Cancel Button */
+form button[type="button"] {
+  background-color: #f1f5f9;
+  color: #374151;
+  border: 1px solid #cbd5e1;
+}
+
+form button[type="button"]:hover {
+  background-color: #e2e8f0;
+}
+
+/* 🚨 Error Message */
+.error {
+  color: #dc2626;
+  font-size: 0.9rem;
+  margin-top: -0.3rem;
+  text-align: left;
+}

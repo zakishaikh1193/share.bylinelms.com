@@ -1,0 +1,46 @@
+.booktype-admin-wrapper {
+  padding: 2rem;
+}
+
+.booktype-admin-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.booktype-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.booktype-table-container {
+  margin-top: 1rem;
+}
+
+.table-title {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th, .admin-table td {
+  border: 1px solid #ddd;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.admin-table th {
+  background-color: #f4f4f4;
+}
+
+.error-message {
+  color: red;
+  margin-bottom: 1rem;
+}

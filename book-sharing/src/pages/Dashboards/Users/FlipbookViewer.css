@@ -1,0 +1,219 @@
+/* Flipbook Wrapper with Dynamic Background and Image */
+.flipbook-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  padding: 40px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(224, 234, 252, 0.8), rgba(81, 127, 184, 0.8));
+ 
+  background-size: 100% 100%; /* or use 100% 100% */
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: fixed;
+  background-blend-mode: overlay;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+ 
+ 
+/* Flipbook Container Styling */
+.flipbook-responsive {
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  background-color: white;
+  padding: 12px;
+  transition: transform 0.3s ease;
+  z-index: 2;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+ 
+/* Optional Shadow Base */
+.flipbook-responsive::after {
+  content: "";
+  display: block;
+  height: 12px;
+  margin-top: -6px;
+  background: linear-gradient(to bottom, #ccc, transparent);
+  border-radius: 0 0 12px 12px;
+  opacity: 1;
+}
+ 
+/* Each Page Styling */
+.page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s ease;
+}
+ 
+/* Subtle Hover for Pages */
+.page:hover {
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+}
+ 
+.page-image {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  user-select: none;
+  max-width: 1200px;
+}
+ 
+/* Arrow Navigation Buttons - Side Positioned */
+.nav-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-60%);
+  background-color: rgba(0, 123, 255, 0.8);
+  color: white;
+  border: none;
+  font-size: 26px;
+  padding: 7px 14px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 3;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+ 
+.nav-button:hover {
+  background-color: rgba(0, 86, 179, 0.9);
+}
+ 
+.nav-button.left {
+  left: 30px;
+}
+ 
+.nav-button.right {
+  right: 30px;
+}
+ 
+/* Page Info - Glassy, Dynamic, Transformative */
+.page-info {
+  margin-top: 24px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #000;
+  text-align: center;
+  font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 10px 24px;
+  border-radius: 40px;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.15);
+  animation: glowPulse 2s ease-in-out infinite;
+  transition: all 0.3s ease-in-out;
+}
+ 
+/* Glowing Animation for Page Info */
+@keyframes glowPulse {
+  0% {
+    box-shadow: 0 0 4px rgba(0, 123, 255, 0.2), 0 0 8px rgba(0, 123, 255, 0.1);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.3), 0 0 18px rgba(0, 123, 255, 0.15);
+    transform: scale(1.01);
+  }
+  100% {
+    box-shadow: 0 0 4px rgba(0, 123, 255, 0.2), 0 0 8px rgba(0, 123, 255, 0.1);
+    transform: scale(1);
+  }
+}
+ 
+/* Responsive Styling */
+@media (max-width: 768px) {
+  .flipbook-responsive {
+    width: 100%;
+  }
+ 
+  .nav-button {
+    font-size: 22px;
+    padding: 8px 12px;
+  }
+ 
+  .nav-button.left {
+    left: 10px;
+  }
+ 
+  .nav-button.right {
+    right: 10px;
+  }
+ 
+  .page-info {
+    font-size: 16px;
+    padding: 6px 16px;
+  }
+}
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.9);
+  z-index: 1000;
+}
+ 
+.loading-overlay p {
+  margin-top: 20px;
+  font-size: 1.2rem;
+  color: #333;
+}
+ 
+/* Circular Progress Indicator */
+.progress-container {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+ 
+.progress-circle {
+  transform: rotate(-90deg);
+}
+ 
+.progress-circle-bg {
+  fill: none;
+  stroke: #e0e0e0;
+}
+ 
+.progress-circle-fill {
+  fill: none;
+  stroke: #3b82f6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.3s ease;
+}
+ 
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+}
+ 
+/* Flipbook Styles (existing) */
+.flipbook-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

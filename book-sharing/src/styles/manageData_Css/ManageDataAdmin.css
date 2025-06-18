@@ -1,0 +1,280 @@
+/* 🌐 Main Container */
+.manage-data-admin-container {
+  width: 95%;
+  margin: 2rem auto;
+  font-family: 'Inter', sans-serif;
+  background-color: #f9f9f9;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* 🔠 Title */
+.manage-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: #333;
+  text-align: center;
+}
+
+/* 📦 Horizontal Button Group */
+.horizontal-button-group {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.button-group-section {
+  flex: 1;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+}
+
+.button-group-section h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #444;
+}
+.horizontal-sections-row {
+  display: flex;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.data-section.half-width {
+  flex: 1;
+}
+
+.add-data-button {
+  background-color: #007bff;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background-color 0.3s;
+}
+
+.add-data-button:hover {
+  background-color: #0056b3;
+}
+
+.button-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.item-button {
+  background-color: #eef2f7;
+  color: #333;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.25s;
+}
+
+.item-button:hover {
+  background-color: #dce6f1;
+}
+
+/* 📂 Section Layout */
+.horizontal-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* 🧾 Table Section */
+.data-section {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  margin-top: 1rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.section-header h2 {
+  font-size: 1.5rem;
+  color: #222;
+}
+
+.section-header button {
+  background-color: #28a745;
+  color: white;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.section-header button:hover {
+  background-color: #218838;
+}
+
+/* 📊 Table Styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+th,
+td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 0.95rem;
+}
+
+th {
+  background-color: #f1f5f9;
+  font-weight: 600;
+  color: #333;
+}
+
+td {
+  background-color: #ffffff;
+}
+
+/* 🛠️ Action Buttons */
+.actions-cell {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.action-icon {
+  cursor: pointer;
+  color: #666;
+  font-size: 1.2rem;
+  transition: color 0.2s;
+}
+
+.action-icon:hover {
+  color: #000;
+}
+
+/* ✏️ Edit Modal */
+.edit-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(33, 37, 41, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.edit-modal-content {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  text-align: center;
+}
+
+.edit-modal-content h3 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.edit-input {
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+}
+
+.edit-button-group {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.edit-button-group button {
+  padding: 8px 18px;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.edit-button-group button:first-child {
+  background-color: #007bff;
+  color: white;
+}
+
+.edit-button-group button:first-child:hover {
+  background-color: #0056b3;
+}
+
+.cancel-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: #495057;
+}
+
+/* 📱 Responsive */
+@media (max-width: 768px) {
+  .horizontal-button-group {
+    flex-direction: column;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .edit-button-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+.item-button-with-icon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.inline-delete-icon {
+  cursor: pointer;
+  margin-left: 8px;
+  color: red;
+  background-color: #eef2f7;
+  color: #333;
+  border: none;
+
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.25s;
+}

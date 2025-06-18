@@ -1,0 +1,127 @@
+/* 🔲 Modal Overlay */
+.addstandard-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(252, 252, 252, 0.5);
+  backdrop-filter: blur(1px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* 🧩 Modal Content Container */
+.addstandard-modal-content {
+  background-color: #ffffff;
+  padding: 2rem 2.5rem;
+  border-radius: 14px;
+  width: 92%;
+  max-width: 600px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+  font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* 🧾 Modal Title */
+.addstandard-modal-content h1 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* 📦 Section Wrapper */
+.addstandard-modal .data-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 📌 Section Header */
+.addstandard-modal .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.addstandard-modal .section-header h2 {
+  font-size: 1.4rem;
+  margin: 0;
+  color: #1e293b;
+}
+
+.addstandard-modal .section-header button {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+  background-color: #3b82f6;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.addstandard-modal .section-header button:hover {
+  background-color: #2563eb;
+}
+
+/* 📝 List Styles */
+.addstandard-modal ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  color: #374151;
+}
+
+.addstandard-modal ul li {
+  margin: 0.4rem 0;
+}
+
+/* 📊 Table Layout */
+.addstandard-modal table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.addstandard-modal table th,
+.addstandard-modal table td {
+  border: 1px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.addstandard-modal table th {
+  background-color: #f1f5f9;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.addstandard-modal table tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+/* ❌ Close Button (Optional) */
+.addstandard-modal .close-btn {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  padding: 0.4rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.addstandard-modal .close-btn:hover {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}

@@ -1,0 +1,88 @@
+.language-admin-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 60px 20px;
+  background-color: #f0f4fa;
+  min-height: 100vh;
+}
+
+.language-admin-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 30px;
+  width: 100%;
+  max-width: 900px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.language-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.language-header h2 {
+  font-size: 28px;
+  color: #333;
+  margin: 0;
+}
+
+.language-table-container {
+  margin-top: 20px;
+}
+
+.table-title {
+  font-size: 20px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid #eaeaea;
+  font-size: 15px;
+}
+
+.admin-table th {
+  background-color: #f6f8fa;
+  color: #333;
+  font-weight: 600;
+}
+
+.admin-table tbody tr:hover {
+  background-color: #f1f5ff;
+}
+
+.btn-primary {
+  background-color: #3a7afe;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #2f5ddb;
+}
+
+.error-message {
+  color: red;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
