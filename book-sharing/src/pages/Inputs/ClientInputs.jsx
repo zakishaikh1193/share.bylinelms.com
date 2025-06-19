@@ -1,109 +1,3 @@
-// import React, { useEffect, useState } from 'react';
-// import '../../styles/inputs-Css/ClientInputs.css';
-// import axios from 'axios';
-
-// function ClientInput() {
-//   const [inputs, setInputs] = useState([]);
-
-//   useEffect(() => {
-//     loadMockData();
-
-//     // Uncomment this when backend API is available
-//     // fetchInputsFromBackend();
-//   }, []);
-
-//   const loadMockData = () => {
-//     const mock = [
-//       {
-//         id: 1,
-//         clientName: "Riyadh International School",
-//         course: "Mathematics - Grade 8",
-//         email: "admin@riyadhschool.sa",
-//         feedback: "Please correct page 23 and update answer keys in chapter 4.",
-//         submittedAt: new Date().toISOString(),
-//         location: "Riyadh, Saudi Arabia",
-//         fileUrl: "#", // Placeholder
-//       },
-//       {
-//         id: 2,
-//         clientName: "Abu Dhabi University",
-//         course: "Physics 102",
-//         email: "faculty@adu.ac.ae",
-//         feedback: "Missing diagrams in module 3. Please update.",
-//         submittedAt: new Date().toISOString(),
-//         location: "Abu Dhabi, UAE",
-//         fileUrl: "#",
-//       }
-//     ];
-//     setInputs(mock);
-//   };
-
-//   const fetchInputsFromBackend = async () => {
-//     try {
-//       const response = await axios.get('/api/client-inputs');
-//       setInputs(response.data);
-//     } catch (error) {
-//       console.error("Error fetching client inputs:", error);
-//     }
-//   };
-
-//   const handleFileUpload = (e, id) => {
-//     const file = e.target.files[0];
-//     if (!file) return;
-
-//     console.log(`Uploading file for input ID ${id}:`, file.name);
-
-//     // TODO: Implement file upload logic to backend here
-//   };
-
-//   return (
-//     <div className="client-input-wrapper">
-//       <div className="client-input-container">
-//         <h2>Client Inputs</h2>
-//         <table className="client-input-table">
-//           <thead>
-//             <tr>
-//               <th>#</th>
-//               <th>Client Name</th>
-//               <th>Email</th>
-//               <th>Course</th>
-//               <th>Feedback</th>
-//               <th>Date</th>
-//               <th>Location</th>
-//               <th>Download</th>
-//               <th>Upload Updated File</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {inputs.length === 0 ? (
-//               <tr><td colSpan="9">No client inputs found.</td></tr>
-//             ) : (
-//               inputs.map((input, index) => (
-//                 <tr key={input.id}>
-//                   <td>{index + 1}</td>
-//                   <td>{input.clientName}</td>
-//                   <td>{input.email}</td>
-//                   <td>{input.course}</td>
-//                   <td>{input.feedback}</td>
-//                   <td>{new Date(input.submittedAt).toLocaleDateString()}</td>
-//                   <td>{input.location}</td>
-//                   <td>
-//                     <a href={input.fileUrl} download className="download-link">Download</a>
-//                   </td>
-//                   <td>
-//                     <input type="file" onChange={(e) => handleFileUpload(e, input.id)} />
-//                   </td>
-//                 </tr>
-//               ))
-//             )}
-//           </tbody>
-//         </table>
-//       </div>
-//     </div>
-//   );
-// }
-
-// export default ClientInput;
 import React, { useEffect, useState } from "react";
 import axios from "../../axiosConfig";
 import '../../styles/inputs-Css/ClientInputs.css';
@@ -142,7 +36,7 @@ const AdminReviewList = () => {
       console.log('Extracted filename:', filename);
 
       // Use the full URL with the base URL
-      const baseURL = process.env.REACT_APP_API_URL || 'https://share.bylinelms.com';
+      const baseURL = axios.defaults.baseURL;
       const downloadUrl = `${baseURL}/api/reviews/download/${encodeURIComponent(filename)}`;
       console.log('Download URL:', downloadUrl);
 

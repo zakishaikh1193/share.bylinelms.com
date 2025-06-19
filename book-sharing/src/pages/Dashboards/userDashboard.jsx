@@ -6,6 +6,7 @@ import logo from "../../assests/images/logo.jpg";
 import { FaUserCircle } from "react-icons/fa";
 import img1 from "../../assests/images/img1.jpg";
 import img2 from "../../assests/images/img2.jpg";
+import axios from "../../axiosConfig";
  
 function UserDashboard() {
   const { user, logout } = useAuth();
@@ -15,8 +16,29 @@ function UserDashboard() {
   const [openMenus, setOpenMenus] = useState({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [userDetails, setUserDetails] = useState(null);
   const dropdownRef = useRef(null);
   const isDashboardHome = location.pathname === "/user/dashboard";
+
+  useEffect(() => {
+    // This effect runs whenever the user ID becomes available.
+    if (user?.user_id) {
+      const fetchUserDetails = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const res = await axios.get(`/api/user/${user.user_id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setUserDetails(res.data);
+          console.log("User details fetched:", res.data); // This should now appear in your console
+        } catch (error) {
+          console.error("Failed to fetch user details:", error);
+        }
+      };
+
+      fetchUserDetails();
+    }
+  }, [user, userDetails]);
  
   const toggleMenu = (index) => {
     setOpenMenus((prev) => ({
@@ -120,31 +142,29 @@ function UserDashboard() {
         </ul>
       </aside>
  
-      <main className="main-content">
+<main className="main-content">
         <header className="top-navbar">
           <div
             className="user-info"
             onClick={toggleUserDropdown}
-            style={{ cursor: "pointer", position: "relative" }}
             ref={dropdownRef}
           >
+            {/* The initial display is fine, so no changes here */}
             <span className="user-avatar">
               {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
             </span>
             <span className="username">{user?.name || "User"}</span>
  
-            {userDropdownOpen && (
-              <div
-                className="user-dropdown-menu"
-              >
+     {userDropdownOpen && (
+              <div className="user-dropdown-menu">
                 <div className="dropdown-profile">
-                  <FaUserCircle size={48} color="#555" />
-                  <div style={{ marginLeft: 12 }}>
+                  <FaUserCircle size={48} color="#4A5568" />
+                  <div className="dropdown-user-details">
                     <div className="dropdown-name">
-                      {user?.name || "User"}
+                      {userDetails?.name || user?.name || "User"}
                     </div>
                     <div className="dropdown-email">
-                      {user?.email || "user@example.com"}
+                      {userDetails?.email || "user@example.com"}
                     </div>
                   </div>
                 </div>

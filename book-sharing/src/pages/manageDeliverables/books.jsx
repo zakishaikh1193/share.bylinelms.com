@@ -11,6 +11,7 @@ const BooksTable = () => {
   const [languages, setLanguages] = useState([]);
   const [standards, setStandards] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('')
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
@@ -44,6 +45,22 @@ const BooksTable = () => {
       setLoading(false);
     }
   };
+
+   const filteredBooks = books.filter(book => {
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    if (!lowerCaseSearchTerm) return true; // If no search term, show all books
+
+    return (
+      (book.title || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+      (book.country_name || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+      (book.isbn_code || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+      (book.book_type_title || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+      getLanguageName(book.language_id).toLowerCase().includes(lowerCaseSearchTerm) ||
+      getGradeName(book.grade_id).toLowerCase().includes(lowerCaseSearchTerm) ||
+      getSubjectName(book.subject_id).toLowerCase().includes(lowerCaseSearchTerm) ||
+      getStandardName(book.standard_id).toLowerCase().includes(lowerCaseSearchTerm)
+    );
+  });
 
   const handleDelete = async (bookId, e) => {
     e.stopPropagation();
@@ -87,7 +104,15 @@ const BooksTable = () => {
       </div>
 
       <h2 className="books-table-title">Books List</h2>
-
+      <div className="table-search-container">
+  <input
+    type="search"
+    className="books-table-search"
+    placeholder="Search by title, country, subject..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+  />
+</div>
       <table className="books-table-structure">
         <thead>
           <tr>
@@ -104,12 +129,12 @@ const BooksTable = () => {
           </tr>
         </thead>
         <tbody>
-          {books.length === 0 ? (
+          {filteredBooks.length === 0 ? (
             <tr>
-              <td colSpan="10" className="books-table-no-data">No books available</td>
+              <td colSpan="10" className="books-table-no-data">{searchTerm ? `No books found matching "${searchTerm}"` : "No books available"}</td>
             </tr>
           ) : (
-            books.map((book) => (
+            filteredBooks.map((book) => (
               <tr key={book.book_id} className="clickable-row">
                 <td>{book.book_id}</td>
                 <td>{book.title}</td>

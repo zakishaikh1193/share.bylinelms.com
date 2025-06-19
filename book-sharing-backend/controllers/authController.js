@@ -131,43 +131,51 @@ exports.userDashboard = (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, role, status, organization, designation, country_id } = req.body;
- 
-    // Validate required fields
-    if (!name || !email || !role || !status || !country_id) {
-      return res.status(400).json({ error: 'Required fields missing' });
-    }
- 
-    // Check if user exists
-    const [existingUser] = await db.query('SELECT * FROM users WHERE user_id = ?', [id]);
-    if (existingUser.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
- 
-    // Update user
-    const query = `
-      UPDATE users
-      SET name = ?,
-          email = ?,
-          role = ?,
-          status = ?,
-          organization = ?,
-          designation = ?,
-          country_id = ?
-      WHERE user_id = ?
-    `;
- 
-    await db.query(query, [
+    const {
       name,
       email,
       role,
       status,
       organization,
       designation,
-      country_id,
-      id
-    ]);
- 
+      password
+    } = req.body;
+
+    // Validate required fields (except password)
+    if (!name || !email || !role || !status) {
+      return res.status(400).json({ error: 'Required fields missing' });
+    }
+
+    // Check if user exists
+    const [existingUser] = await db.query('SELECT * FROM users WHERE user_id = ?', [id]);
+    if (existingUser.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Prepare query
+    let query = `
+      UPDATE users
+      SET name = ?,
+          email = ?,
+          role = ?,
+          status = ?,
+          organization = ?,
+          designation = ?`;
+    const params = [name, email, role, status, organization, designation];
+
+    // Add password update if provided
+    if (password && password.trim()) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      query += `,
+          password = ?`;
+      params.push(hashedPassword);
+    }
+
+    query += ` WHERE user_id = ?`;
+    params.push(id);
+
+    await db.query(query, params);
+
     res.json({ message: 'User updated successfully' });
   } catch (err) {
     console.error('Update user error:', err);

@@ -902,4 +902,106 @@
   background-color: #1565c0;
 }
  
- 
+ /* --- User Info & Dropdown in Top Navbar --- */
+.user-info {
+  position: relative; /* This is crucial for positioning the dropdown */
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.user-info:hover {
+  background-color: #f1f5f9; /* Light grey on hover */
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #3b82f6; /* Blue avatar background */
+  color: white;
+  font-weight: bold;
+  border-radius: 50%;
+  margin-right: 12px;
+}
+
+.username {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+/* The Dropdown Menu Itself */
+.user-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 10px; /* Space between user info and dropdown */
+  width: 300px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  overflow: hidden; /* Ensures child elements conform to border-radius */
+  z-index: 100;
+  animation: slide-down 0.2s ease-out;
+}
+
+/* --- Dropdown Profile Section --- */
+.dropdown-profile {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dropdown-user-details {
+  margin-left: 16px;
+}
+
+.dropdown-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.dropdown-email {
+  font-size: 0.875rem; /* 14px */
+  color: #64748b; /* A softer, secondary color */
+}
+
+/* --- Logout Button --- */
+.logout-button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 16px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #ef4444; /* Red color for a destructive action */
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.logout-button:hover {
+  background-color: #fef2f2; /* A very light red on hover */
+}
+
+
+/* Optional: A simple animation for the dropdown */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -164,7 +164,8 @@ function Dashboard() {
                 <div className="dashboard-flex">
                   <img src={books1Image} alt="Books Collection" className="book-img" />
                   <div className="dashboard-text">
-                    <h1>Explore Books</h1>
+                    <div className="dashboard-bg"><h1>Explore Books</h1></div>
+                    
                     <p>
                       Every page you open is a door to something new, a chance to grow, connect, and inspire. From local insights to global knowledge, these are treasures not hidden — but uploaded, waiting for you. Go beyond textbooks and step into a world where your next breakthrough is just one click away.
                     </p>
@@ -176,7 +177,8 @@ function Dashboard() {
                 <div className="dashboard-flex">
                  
                   <div className="dashboard-text">
-                    <h1>Books</h1>
+                    <div className="dashboard-bg"><h1>Books</h1></div>
+                    
                     <p>"Dive into your comprehensive book repository to organize, update, and oversee your educational materials across countries, grades, and subjects."   </p>
                     <Link to="/admin/books" className="dashboard-button">Books</Link>
                    

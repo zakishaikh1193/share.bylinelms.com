@@ -361,13 +361,13 @@ body {
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 }
  
-/* .issued-books .book-card-image {
+.issued-books .book-card-image {
   width: 20%;
   height: 13rem;
   object-fit: cover;
   border-bottom: 1px solid #e0e7ff; 
   display: block;
-} */
+}
  
 .issued-books .book-card-content {
   padding: 0.9rem;
@@ -1386,5 +1386,45 @@ body {
   gap: 15px;
   margin-bottom: 20px;
 }
- 
- 
+
+/* --- Styles for search bar in BooksList --- */
+.content-header-with-search {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* Allows items to stack on small screens */
+  gap: 1rem;
+  /* Reset the original heading's bottom margin */
+  margin-bottom: 1.5rem; 
+}
+
+.content-header-with-search .content-heading {
+  margin-bottom: 0;
+}
+
+.book-list-search-input {
+  padding: 0.6rem 0.9rem;
+  font-size: 0.9rem;
+  border: 1px solid #d1d5db; /* A neutral border color */
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 320px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.book-list-search-input:focus-visible {
+  outline: none;
+  border-color: #3b82f6; /* Light blue focus */
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* --- Responsive adjustment for the new header --- */
+@media (max-width: 768px) {
+  .content-header-with-search {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .book-list-search-input {
+    max-width: 100%; /* Full width on mobile */
+  }
+}

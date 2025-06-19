@@ -416,7 +416,6 @@
   font-size: 1.8rem;
   margin-bottom: 0.75rem;
   background: linear-gradient(90deg, #007bff, #00c6ff);
-  -webkit-text-fill-color: transparent;
 }
  
 .dashboard-text p {
