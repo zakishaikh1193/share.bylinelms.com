@@ -38,6 +38,12 @@ export default function AddBookForm() {
   const [uploadComplete, setUploadComplete] = useState(false);
   const [isbnError, setIsbnError] = useState('');
   const [versionError, setVersionError] = useState('');
+  const [formats, setFormats] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [selectedFormat, setSelectedFormat] = useState('');
+  const [tagInput, setTagInput] = useState('');
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [tagOptions, setTagOptions] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -49,6 +55,11 @@ export default function AddBookForm() {
     axios.get('/api/booktypes', { headers }).then(res => setBookTypes(res.data));
     axios.get('/api/standards', { headers }).then(res => setStandards(res.data));
     axios.get('/api/countries', { headers }).then(res => setCountries(res.data));
+    axios.get('/api/book-formats', { headers }).then(res => setFormats(res.data));
+    axios.get('/api/tags', { headers }).then(res => {
+      setTags(res.data);
+      setTagOptions(res.data.map(t => ({ tag_id: t.tag_id, tag_name: t.tag_name })));
+    });
   }, []);
 
   useEffect(() => {
@@ -169,6 +180,47 @@ export default function AddBookForm() {
     }
   };
 
+  const handleFormatChange = (e) => {
+    setSelectedFormat(e.target.value);
+  };
+
+  // Tag input logic
+  const handleTagInputChange = (e) => {
+    setTagInput(e.target.value);
+  };
+
+  const handleTagInputKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+      e.preventDefault();
+      const value = tagInput.trim();
+      if (!value) return;
+      // Check if tag already selected
+      if (selectedTags.some(t => t.tag_name.toLowerCase() === value.toLowerCase())) {
+        setTagInput('');
+        return;
+      }
+      // Check if tag exists
+      const existing = tagOptions.find(t => t.tag_name.toLowerCase() === value.toLowerCase());
+      if (existing) {
+        setSelectedTags([...selectedTags, existing]);
+      } else {
+        // New tag (no id yet)
+        setSelectedTags([...selectedTags, { tag_id: null, tag_name: value }]);
+      }
+      setTagInput('');
+    }
+  };
+
+  const handleTagSelect = (tag) => {
+    if (!selectedTags.some(t => t.tag_id === tag.tag_id)) {
+      setSelectedTags([...selectedTags, tag]);
+    }
+  };
+
+  const handleRemoveTag = (tag) => {
+    setSelectedTags(selectedTags.filter(t => t.tag_id !== tag.tag_id && t.tag_name !== tag.tag_name));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -185,7 +237,20 @@ export default function AddBookForm() {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
-      // 1. Create book
+      // 1. Create new tags if needed
+      const newTags = selectedTags.filter(t => !t.tag_id);
+      let newTagIds = [];
+      for (const t of newTags) {
+        const { data } = await axios.post('/api/tags', { tag_name: t.tag_name }, config);
+        newTagIds.push(data.tag_id);
+      }
+      // All tag ids to send
+      const tag_ids = [
+        ...selectedTags.filter(t => t.tag_id).map(t => t.tag_id),
+        ...newTagIds
+      ];
+
+      // 2. Create book
       const { data: book } = await axios.post('/api/books', {
         title: formData.title,
         description: formData.description,
@@ -195,6 +260,8 @@ export default function AddBookForm() {
         standard_id: formData.standard_id,
         country_id: formData.country_id,
         booktype_id: formData.booktype_id,
+        format_id: selectedFormat,
+        tag_ids,
       }, config);
 
       const book_id = book.book_id;
@@ -344,6 +411,16 @@ export default function AddBookForm() {
           </select>
         </label>
 
+          <label>
+          Book Format:
+          <select name="format_id" value={selectedFormat} onChange={handleFormatChange} required>
+            <option value="">-- Select Format --</option>
+            {formats.map(f => (
+              <option key={f.format_id} value={f.format_id}>{f.format_name}</option>
+            ))}
+          </select>
+        </label>
+
         <label>
           Version Label:
           <input
@@ -370,6 +447,8 @@ export default function AddBookForm() {
           {isbnError && <span className="error-message">{isbnError}</span>}
         </label>
 
+        <br />
+
         <label>
           Upload Version File (PDF):
           <input type="file" name="version_file" accept="application/pdf" onChange={handleChange} required />
@@ -385,11 +464,63 @@ export default function AddBookForm() {
           />
         </label>
 
-       <label>
-  Upload Cover PDF:
-  <input type="file" name="cover_file" accept="application/pdf" onChange={handleChange} required />
-</label>
+        <label>
+          Upload Cover PDF:
+          <input type="file" name="cover_file" accept="application/pdf" onChange={handleChange} required />
+        </label>
 
+<label className="full-width">
+  Tags:
+  <div className="tag-input-container">
+    <div className="tag-input-field-wrapper">
+      <input
+        type="text"
+        placeholder="Add or select a tag"
+        value={tagInput}
+        onChange={handleTagInputChange}
+        onKeyDown={handleTagInputKeyDown}
+        className="tag-input-field"
+      />
+      <button
+        type="button"
+        className="tag-input-add-btn"
+        onClick={() => handleTagInputKeyDown({ key: 'Enter', preventDefault: () => {} })}
+      >
+        + Add
+      </button>
+    </div>
+
+    {/* Suggestions Dropdown */}
+    {tagOptions.filter(t => t.tag_name.toLowerCase().includes(tagInput.toLowerCase()) && !selectedTags.some(st => st.tag_id === t.tag_id)).length > 0 && (
+      <div className="tag-suggestions-list">
+        {tagOptions
+          .filter(t => t.tag_name.toLowerCase().includes(tagInput.toLowerCase()) && !selectedTags.some(st => st.tag_id === t.tag_id))
+          .map(t => (
+            <div
+              key={t.tag_id}
+              className="tag-suggestion-item"
+              onClick={() => handleTagSelect(t)}
+            >
+              {t.tag_name}
+            </div>
+          ))}
+      </div>
+    )}
+
+    {/* Selected Tags Area */}
+    {selectedTags.length > 0 && (
+        <div className="selected-tags-container">
+            {selectedTags.map(tag => (
+            <div key={tag.tag_id || tag.tag_name} className="selected-tag-pill">
+                <span>{tag.tag_name}</span>
+                <span className="remove-tag-btn" onClick={() => handleRemoveTag(tag)}>x</span>
+            </div>
+            ))}
+        </div>
+    )}
+  </div>
+</label>
+        
       </div>
 
       {isSubmitting && (

@@ -107,7 +107,8 @@ const UnassignedBooksList = ({
     languages,
     standards,
     bookTypes,
-    countries
+    countries,
+    formats
   } = metadata;
 
   // Toggle filter selection helper
@@ -126,7 +127,8 @@ const UnassignedBooksList = ({
     languages: true,
     standards: true,
     bookTypes: true,
-    countries: true
+    countries: true,
+    formats: true
   });
 
 const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
@@ -139,13 +141,15 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
       const matchStandard = filters.standards.size === 0 || filters.standards.has(book.standard_id);
       const matchBookType = filters.bookTypes.size === 0 || (book.booktype_id && filters.bookTypes.has(book.booktype_id));
       const matchCountry = filters.countries.size === 0 || (book.country_id && filters.countries.has(book.country_id));
+      const matchFormat = filters.formats.size === 0 || (book.format_id && filters.formats.has(book.format_id));
       return (
         matchGrade &&
         matchSubject &&
         matchLanguage &&
         matchStandard &&
         matchBookType &&
-        matchCountry
+        matchCountry &&
+        matchFormat
       );
     })
     .filter(book => {
@@ -159,7 +163,8 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
         (book.version_label?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
         (book.book_type_title || '').toLowerCase().includes(lowerCaseSearchTerm) ||
         (book.country_name || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-        (book.isbn_code || '').toLowerCase().includes(lowerCaseSearchTerm)
+        (book.isbn_code || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+        (book.tags?.some(tag => tag.tag_name.toLowerCase().includes(lowerCaseSearchTerm)))
       );
     });
 
@@ -190,7 +195,8 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
           { key: "bookTypes", label: "Book Types", items: bookTypes, idKey: "book_type_id", nameKey: "book_type_title" },
           { key: "languages", label: "Languages", items: languages, idKey: "language_id", nameKey: "language_name" },
           { key: "standards", label: "Standards", items: standards, idKey: "standard_id", nameKey: "standard_name" },
-          { key: "countries", label: "Countries", items: countries, idKey: "country_id", nameKey: "country_name" }
+          { key: "countries", label: "Countries", items: countries, idKey: "country_id", nameKey: "country_name" },
+          { key: "formats", label: "Formats", items: formats, idKey: "format_id", nameKey: "format_name" }
         ].map(({ key, label, items, idKey, nameKey }) => (
           <div key={key} className="filter-box" aria-expanded={showFilters[key]}>
             <div className="filter-title" onClick={() => toggleFilterVisibility(key)}>
@@ -246,7 +252,8 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
                 subject_name,
                 book_type_title,
                 country_name,
-                isbn_code
+                isbn_code,
+                format_name
               } = book;
 
               return (
@@ -278,6 +285,7 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
                     <div className="book-meta"><span>Language:</span> {language_name || "N/A"}</div>
                     <div className="book-meta"><span>Subject:</span> {subject_name || "N/A"}</div>
                     <div className="book-meta"><span>Book Type:</span> {book_type_title || "N/A"}</div>
+                    <div className="book-meta"><span>Format:</span> {format_name || "N/A"}</div>
                     <div className="book-meta"><span>Country:</span> {country_name || "N/A"}</div>
                     <div className="book-meta"><span>ISBN:</span> {isbn_code || "N/A"}</div>
                   </div>
@@ -310,7 +318,8 @@ const ManageAccess = () => {
     languages: new Set(),
     standards: new Set(),
     bookTypes: new Set(),
-    countries: new Set()
+    countries: new Set(),
+    formats: new Set()
   });
 
   // Metadata for filters
@@ -320,7 +329,8 @@ const ManageAccess = () => {
     languages: [],
     standards: [],
     bookTypes: [],
-    countries: []
+    countries: [],
+    formats: []
   });
 
   const token = localStorage.getItem("token");
@@ -372,14 +382,16 @@ const initialEdits = {};
           languagesRes,
           standardsRes,
           bookTypesRes,
-          countriesRes
+          countriesRes,
+          formatsRes
         ] = await Promise.all([
           axios.get('/api/grades', authHeaders),
           axios.get('/api/subjects', authHeaders),
           axios.get('/api/languages', authHeaders),
           axios.get('/api/standards', authHeaders),
           axios.get('/api/booktypes', authHeaders),
-          axios.get('/api/countries', authHeaders).catch(() => ({ data: [] }))
+          axios.get('/api/countries', authHeaders).catch(() => ({ data: [] })),
+          axios.get('/api/book-formats', authHeaders).catch(() => ({ data: [] }))
         ]);
 
         setMetadata({
@@ -388,7 +400,8 @@ const initialEdits = {};
           languages: languagesRes.data || [],
           standards: standardsRes.data || [],
           bookTypes: bookTypesRes.data || [],
-          countries: countriesRes.data || []
+          countries: countriesRes.data || [],
+          formats: formatsRes.data || []
         });
       } catch (error) {
         console.error('Error fetching filter metadata:', error);

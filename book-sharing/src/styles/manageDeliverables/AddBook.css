@@ -364,4 +364,121 @@ button[disabled] {
   max-width: 100%;
   line-height: 1.2;
 }
- 
+ /* src/styles/TagInput.css */
+
+/* The main container for the entire tag input component */
+.tag-input-container {
+  background-color: #ffffff;
+  border: 1px solid #ced4da; /* A standard, neutral border color */
+  border-radius: 6px;
+  padding: 8px 12px;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Add a blue outline when the container or any of its children are focused */
+.tag-input-container:focus-within {
+  border-color: #6495ed;
+  box-shadow: 0 0 0 3px rgba(100, 149, 237, 0.25);
+}
+
+/* Wrapper for the text input and the 'Add' button */
+.tag-input-field-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Space between input and button */
+}
+
+/* The actual text input field */
+.tag-input-field {
+  flex-grow: 1; /* Allows the input to take up available space */
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1rem;
+  padding: 4px 0;
+  width: 100%;
+}
+
+/* The '+ Add' button next to the input */
+.tag-input-add-btn {
+  background-color: #6495ed;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  flex-shrink: 0; /* Prevents the button from shrinking */
+}
+
+.tag-input-add-btn:hover {
+  background-color: #507ec2; /* A darker shade on hover */
+}
+
+/* The dropdown list for tag suggestions */
+.tag-suggestions-list {
+  max-height: 120px;
+  overflow-y: auto;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  margin-top: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* A single item within the suggestions list */
+.tag-suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.tag-suggestion-item:hover {
+  background-color: #f1f3f5; /* Light grey background on hover */
+}
+
+/* The container for all the selected tags (pills) */
+.selected-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px; /* Space between each tag pill */
+  margin-top: 12px; /* Space above the selected tags */
+}
+
+/* An individual selected tag pill */
+.selected-tag-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #eaf2ff; /* A light blue background */
+  color: #004aad; /* A darker blue for text */
+  border: 1px solid #b3d1ff;
+  border-radius: 16px; /* Makes it a pill shape */
+  padding: 4px 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* The 'x' button to remove a tag */
+.remove-tag-btn {
+  cursor: pointer;
+  font-weight: 700;
+  color: #6495ed;
+  transition: transform 0.1s ease, color 0.2s ease;
+}
+
+.remove-tag-btn:hover {
+  color: #d9534f; /* Change to red on hover for a clear delete action */
+  transform: scale(1.2);
+}
+
+/* Style for the main form label */
+.full-width {
+  display: block;
+  width: 100%;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: #333;
+}

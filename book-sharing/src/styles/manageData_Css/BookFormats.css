@@ -1,0 +1,120 @@
+/* src/styles/ManageData.css */
+
+/* Main container for each section (e.g., Book Formats, Tags) */
+.data-section {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Header containing the title and the "+ Add" button */
+.data-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.data-section h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0;
+}
+
+/* The "+ Add" button */
+.add-btn {
+  background-color: #28a745; /* Green color */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.add-btn:hover {
+  background-color: #218838; /* Darker green on hover */
+}
+
+/* The data table itself */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.data-table thead {
+  background-color: #f7fafc; /* Light grey background for the header */
+}
+
+.data-table th {
+  padding: 12px 16px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4a5568;
+  font-weight: 600;
+}
+
+.data-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #2d3748;
+}
+
+/* Remove border from the last row for a cleaner look */
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Styles for the action buttons (Edit, Delete icons) */
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* Space between icons */
+}
+
+.action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #4a5568; /* Icon color */
+  font-size: 1.1rem; /* Icon size */
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+.action-btn:hover {
+  color: #1a202c;
+  background-color: #edf2f7;
+}
+
+/* Style for the input field that appears during an edit */
+.edit-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.edit-input:focus {
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+}
+
+/* Your provided form style. This is hidden as the "+ Add" button would typically open a modal */
+.inline-form {
+  display: none; 
+}

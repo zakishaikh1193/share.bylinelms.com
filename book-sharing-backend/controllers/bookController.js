@@ -88,6 +88,8 @@ streamBookVersion: async (req, res) => {
       standard_id,
       country_id,
       booktype_id, // New field
+      format_id,   // New field
+      tag_ids      // New field (array)
     } = req.body;
  
     const created_by = req.user.user_id;
@@ -102,8 +104,9 @@ streamBookVersion: async (req, res) => {
         standard_id,
         country_id,
         booktype_id,
+        format_id,
         created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         title,
         description,
@@ -113,11 +116,22 @@ streamBookVersion: async (req, res) => {
         standard_id,
         country_id,
         booktype_id,
+        format_id,
         created_by,
       ]
     );
+
+    const book_id = result.insertId;
+
+    // Insert tags if provided
+    if (Array.isArray(tag_ids) && tag_ids.length > 0) {
+      const tagValues = tag_ids.map(tag_id => [book_id, tag_id]);
+      await pool.query(
+        'INSERT INTO book_tags (book_id, tag_id) VALUES ?',[tagValues]
+      );
+    }
  
-    res.json({ book_id: result.insertId });
+    res.json({ book_id });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -219,7 +233,8 @@ getBooks: async (req, res) => {
         ctry.country_name,
         b.created_by, b.created_at,
         c.uploaded_link AS cover,
-        bv.version_label, bv.isbn_code
+        bv.version_label, bv.isbn_code,
+        b.format_id, bf.format_name
       FROM books b
       LEFT JOIN booktypes bt ON b.booktype_id = bt.book_type_id
       LEFT JOIN countries ctry ON b.country_id = ctry.country_id
@@ -238,6 +253,7 @@ getBooks: async (req, res) => {
           GROUP BY book_id
         )
       ) bv ON b.book_id = bv.book_id
+      LEFT JOIN book_formats bf ON b.format_id = bf.format_id
     `;
  
     if (role === 'admin') {
@@ -262,6 +278,32 @@ getBooks: async (req, res) => {
         [user_id]
       );
     }
+
+    // Fetch tags for all books
+    const bookIds = books.map(b => b.book_id);
+    let tagsByBook = {};
+    if (bookIds.length > 0) {
+      const [tags] = await pool.query(
+        `SELECT bt.book_id, t.tag_id, t.tag_name
+         FROM book_tags bt
+         JOIN tags t ON bt.tag_id = t.tag_id
+         WHERE bt.book_id IN (?)`, [bookIds]
+      );
+      tagsByBook = bookIds.reduce((acc, id) => {
+        acc[id] = [];
+        return acc;
+      }, {});
+      tags.forEach(tag => {
+        if (tagsByBook[tag.book_id]) {
+          tagsByBook[tag.book_id].push({ tag_id: tag.tag_id, tag_name: tag.tag_name });
+        }
+      });
+    }
+    // Attach tags to each book
+    books.forEach(book => {
+      book.tags = tagsByBook[book.book_id] || [];
+    });
+
     res.json({ books });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -418,13 +460,15 @@ getBooks: async (req, res) => {
     const [[book]] = await pool.query(
       `SELECT b.*, g.grade_level AS grade, s.subject_name AS subject,
               l.language_name AS language, std.standard_name AS standard,
-              bt.book_type_title
+              bt.book_type_title,
+              bf.format_name
        FROM books b
        LEFT JOIN grades g ON b.grade_id = g.grade_id
        LEFT JOIN subjects s ON b.subject_id = s.subject_id
        LEFT JOIN languages l ON b.language_id = l.language_id
        LEFT JOIN standards std ON b.standard_id = std.standard_id
        LEFT JOIN booktypes bt ON b.booktype_id = bt.book_type_id
+       LEFT JOIN book_formats bf ON b.format_id = bf.format_id
        WHERE b.book_id = ?`,
       [book_id]
     );
@@ -459,6 +503,16 @@ const [[version]] = await pool.query(
 );
 
     const latest_version = version || null;
+
+    // Fetch tags for this book
+    const [tags] = await pool.query(
+      `SELECT t.tag_id, t.tag_name
+       FROM book_tags bt
+       JOIN tags t ON bt.tag_id = t.tag_id
+       WHERE bt.book_id = ?`,
+      [book_id]
+    );
+    book.tags = tags;
 
     res.json({
       book,
@@ -696,8 +750,8 @@ getUserBookAccess: async (req, res) => {
   try {
     const { user_id } = req.params;
 
-    // 1. Get assigned books with full metadata
-    const [assigned] = await pool.query(`
+    // --- Base query with format join ---
+    const baseQuery = `
       SELECT 
         b.book_id, b.title, b.description,
         b.grade_id, g.grade_level,
@@ -706,44 +760,7 @@ getUserBookAccess: async (req, res) => {
         b.standard_id,
         b.country_id, ctry.country_name,
         b.booktype_id, bt.book_type_title,
-        bc.permission, bc.expiry, bc.can_download,
-        c.uploaded_link AS cover,
-        bv.version_label, bv.isbn_code
-      FROM book_control bc
-      JOIN books b ON bc.book_id = b.book_id
-      LEFT JOIN grades g ON b.grade_id = g.grade_id
-      LEFT JOIN subjects s ON b.subject_id = s.subject_id
-      LEFT JOIN languages l ON b.language_id = l.language_id
-      LEFT JOIN booktypes bt ON b.booktype_id = bt.book_type_id
-      LEFT JOIN countries ctry ON b.country_id = ctry.country_id
-      LEFT JOIN (
-        SELECT book_id, MAX(cover_id) AS max_cover_id
-        FROM covers
-        GROUP BY book_id
-      ) lc ON b.book_id = lc.book_id
-      LEFT JOIN covers c ON c.cover_id = lc.max_cover_id
-      LEFT JOIN (
-        SELECT book_id, version_label, isbn_code
-        FROM book_versions
-        WHERE (book_id, version_id) IN (
-          SELECT book_id, MAX(version_id)
-          FROM book_versions
-          GROUP BY book_id
-        )
-      ) bv ON b.book_id = bv.book_id
-      WHERE bc.user_id = ?
-    `, [user_id]);
-
-    // 2. Get unassigned books with full metadata
-    const [unassigned] = await pool.query(`
-      SELECT 
-        b.book_id, b.title, b.description,
-        b.grade_id, g.grade_level,
-        b.subject_id, s.subject_name,
-        b.language_id, l.language_name,
-        b.standard_id,
-        b.country_id, ctry.country_name,
-        b.booktype_id, bt.book_type_title,
+        b.format_id, bf.format_name,
         c.uploaded_link AS cover,
         bv.version_label, bv.isbn_code
       FROM books b
@@ -751,22 +768,31 @@ getUserBookAccess: async (req, res) => {
       LEFT JOIN subjects s ON b.subject_id = s.subject_id
       LEFT JOIN languages l ON b.language_id = l.language_id
       LEFT JOIN booktypes bt ON b.booktype_id = bt.book_type_id
+      LEFT JOIN book_formats bf ON b.format_id = bf.format_id
       LEFT JOIN countries ctry ON b.country_id = ctry.country_id
       LEFT JOIN (
-        SELECT book_id, MAX(cover_id) AS max_cover_id
-        FROM covers
-        GROUP BY book_id
+        SELECT book_id, MAX(cover_id) AS max_cover_id FROM covers GROUP BY book_id
       ) lc ON b.book_id = lc.book_id
       LEFT JOIN covers c ON c.cover_id = lc.max_cover_id
       LEFT JOIN (
         SELECT book_id, version_label, isbn_code
         FROM book_versions
         WHERE (book_id, version_id) IN (
-          SELECT book_id, MAX(version_id)
-          FROM book_versions
-          GROUP BY book_id
+          SELECT book_id, MAX(version_id) FROM book_versions GROUP BY book_id
         )
       ) bv ON b.book_id = bv.book_id
+    `;
+
+    // 1. Get assigned books
+    const [assigned] = await pool.query(`
+      ${baseQuery}
+      JOIN book_control bc ON b.book_id = bc.book_id
+      WHERE bc.user_id = ?
+    `, [user_id]);
+
+    // 2. Get unassigned books
+    const [unassigned] = await pool.query(`
+      ${baseQuery}
       WHERE b.book_id NOT IN (
         SELECT book_id FROM book_control WHERE user_id = ?
       )
@@ -775,8 +801,31 @@ getUserBookAccess: async (req, res) => {
         WHERE m.book_id = b.book_id AND m.status = 'pending'
       )
     `, [user_id]);
+    
+    // --- 3. Fetch and attach tags for all books ---
+    const allBookIds = [...assigned.map(b => b.book_id), ...unassigned.map(b => b.book_id)];
+    let tagsByBook = {};
+    if (allBookIds.length > 0) {
+      const [tags] = await pool.query(
+        `SELECT bt.book_id, t.tag_id, t.tag_name
+         FROM book_tags bt
+         JOIN tags t ON bt.tag_id = t.tag_id
+         WHERE bt.book_id IN (?)`, [allBookIds]
+      );
+      tagsByBook = allBookIds.reduce((acc, id) => ({ ...acc, [id]: [] }), {});
+      tags.forEach(tag => {
+        if (tagsByBook[tag.book_id]) {
+          tagsByBook[tag.book_id].push({ tag_id: tag.tag_id, tag_name: tag.tag_name });
+        }
+      });
+    }
 
-    res.json({ assignedBooks: assigned, unassignedBooks: unassigned });
+    const attachTags = book => ({ ...book, tags: tagsByBook[book.book_id] || [] });
+
+    res.json({ 
+      assignedBooks: assigned.map(attachTags), 
+      unassignedBooks: unassigned.map(attachTags) 
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -895,7 +944,9 @@ approveAccessRequest: async (req, res) => {
         country_id,
         booktype_id,
         isbn_code,
-        version_label
+        version_label,
+        format_id,   // New field
+        tag_ids      // New field (array)
       } = req.body;
  
       console.log('Updating book with ID:', bookId);
@@ -909,7 +960,9 @@ approveAccessRequest: async (req, res) => {
         country_id,
         booktype_id,
         isbn_code,
-        version_label
+        version_label,
+        format_id,
+        tag_ids
       });
  
       // First check if book exists
@@ -933,7 +986,8 @@ approveAccessRequest: async (req, res) => {
              language_id = ?,
              standard_id = ?,
              country_id = ?,
-             booktype_id = ?
+             booktype_id = ?,
+             format_id = ?
          WHERE book_id = ?`,
         [
           title,
@@ -944,10 +998,23 @@ approveAccessRequest: async (req, res) => {
           standard_id,
           country_id,
           booktype_id,
+          format_id,
           bookId
         ]
       );
- 
+
+      // Update tags if provided
+      if (Array.isArray(tag_ids)) {
+        // Remove all existing tags for this book
+        await pool.query('DELETE FROM book_tags WHERE book_id = ?', [bookId]);
+        if (tag_ids.length > 0) {
+          const tagValues = tag_ids.map(tag_id => [bookId, tag_id]);
+          await pool.query(
+            'INSERT INTO book_tags (book_id, tag_id) VALUES ?', [tagValues]
+          );
+        }
+      }
+
       // Update version information if provided
       if (isbn_code || version_label) {
         // Get the latest version ID

@@ -8,6 +8,8 @@ import AddSubjectModal from "./AddSubjectModal";
 import AddBookTypeModal from "./AddBookTypeModal";
 import AddLanguageModal from "./AddLanguageModal";
 import AddStandardModal from "./AddStandardModal";
+import BookFormats from './BookFormats';
+import Tags from './Tags';
 
 import "../../styles/manageData_Css/ManageDataAdmin.css";
 
@@ -416,6 +418,16 @@ const ManageDataAdmin = () => {
           </section>
         ))}
       </div>
+
+      {/* Book Formats Section */}
+      <section className="data-section">
+        <BookFormats />
+      </section>
+
+      {/* Tags Section */}
+      <section className="data-section">
+        <Tags />
+      </section>
     </div>
   );
 };

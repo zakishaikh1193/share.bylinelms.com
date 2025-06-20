@@ -29,6 +29,12 @@ export default function EditBookForm() {
   const [bookTypes, setBookTypes] = useState([]);
   const [standards, setStandards] = useState([]);
   const [countries, setCountries] = useState([]);
+  const [formats, setFormats] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [selectedFormat, setSelectedFormat] = useState('');
+  const [tagInput, setTagInput] = useState('');
+  const [selectedTags, setSelectedTags] = useState([]); // Array of {tag_id, tag_name}
+  const [tagOptions, setTagOptions] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({
     version: 0,
     zip: 0,
@@ -49,7 +55,7 @@ export default function EditBookForm() {
         const headers = { Authorization: `Bearer ${token}` };
 
         // Fetch all the necessary data in parallel
-        const [bookRes, gradesRes, subjectsRes, languagesRes, bookTypesRes, standardsRes, countriesRes] =
+        const [bookRes, gradesRes, subjectsRes, languagesRes, bookTypesRes, standardsRes, countriesRes, formatsRes, tagsRes] =
           await Promise.all([
             axios.get(`/api/books/${bookId}/details`, { headers }),
             axios.get('/api/grades', { headers }),
@@ -58,6 +64,8 @@ export default function EditBookForm() {
             axios.get('/api/booktypes', { headers }),
             axios.get('/api/standards', { headers }),
             axios.get('/api/countries', { headers }),
+            axios.get('/api/book-formats', { headers }),
+            axios.get('/api/tags', { headers }),
           ]);
 
         // Set the form data with the book details
@@ -65,6 +73,9 @@ export default function EditBookForm() {
         if (!bookData) {
           throw new Error('Book data not found');
         }
+
+        // --- DEBUG: Log the fetched book data ---
+        console.log("Fetched Book Data:", bookData);
 
         const { data: versionsRes } = await axios.get(`/api/books/${bookId}/versions`, { headers });
         const latestVersion = versionsRes.versions?.[0];
@@ -85,13 +96,20 @@ export default function EditBookForm() {
           zip_file: null,
         });
 
-        // Set all the dropdown options
         setGrades(gradesRes.data);
         setSubjects(subjectsRes.data);
         setLanguages(languagesRes.data);
         setBookTypes(bookTypesRes.data);
         setStandards(standardsRes.data);
         setCountries(countriesRes.data);
+        setFormats(formatsRes.data);
+        setTags(tagsRes.data);
+        setTagOptions(tagsRes.data.map(t => ({ tag_id: t.tag_id, tag_name: t.tag_name })));
+
+        // --- FIX: Set the selected format and tags from the fetched book data ---
+        setSelectedFormat(bookData.format_id || '');
+        setSelectedTags(bookData.tags || []);
+        
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -188,10 +206,51 @@ export default function EditBookForm() {
     }
   };
 
+  const handleFormatChange = (e) => {
+    setSelectedFormat(e.target.value);
+  };
+
+  // Tag input logic
+  const handleTagInputChange = (e) => {
+    setTagInput(e.target.value);
+  };
+
+  const handleTagInputKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+      e.preventDefault();
+      const value = tagInput.trim();
+      if (!value) return;
+      // Check if tag already selected
+      if (selectedTags.some(t => t.tag_name.toLowerCase() === value.toLowerCase())) {
+        setTagInput('');
+        return;
+      }
+      // Check if tag exists
+      const existing = tagOptions.find(t => t.tag_name.toLowerCase() === value.toLowerCase());
+      if (existing) {
+        setSelectedTags([...selectedTags, existing]);
+      } else {
+        // New tag (no id yet)
+        setSelectedTags([...selectedTags, { tag_id: null, tag_name: value }]);
+      }
+      setTagInput('');
+    }
+  };
+
+  const handleTagSelect = (tag) => {
+    if (!selectedTags.some(t => t.tag_id === tag.tag_id)) {
+      setSelectedTags([...selectedTags, tag]);
+    }
+  };
+
+  const handleRemoveTag = (tag) => {
+    setSelectedTags(selectedTags.filter(t => t.tag_id !== tag.tag_id && t.tag_name !== tag.tag_name));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setUploadProgress({ version: 0, zip: 0, cover: 0 }); // Cleaned up progress state
+    setUploadProgress({ version: 0, zip: 0, cover: 0 });
     setUploadComplete(false);
     setError(null);
 
@@ -207,7 +266,20 @@ export default function EditBookForm() {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
-      // 1. Update book details first
+      // 1. Create new tags if needed
+      const newTags = selectedTags.filter(t => !t.tag_id);
+      let newTagIds = [];
+      for (const t of newTags) {
+        const { data } = await axios.post('/api/tags', { tag_name: t.tag_name }, config);
+        newTagIds.push(data.tag_id);
+      }
+      // All tag ids to send
+      const tag_ids = [
+        ...selectedTags.filter(t => t.tag_id).map(t => t.tag_id),
+        ...newTagIds
+      ];
+
+      // 2. Update book details first
       await axios.put(`/api/books/update/${bookId}`, {
         title: formData.title,
         description: formData.description,
@@ -218,10 +290,12 @@ export default function EditBookForm() {
         country_id: formData.country_id,
         booktype_id: formData.booktype_id,
         isbn_code: formData.isbn_code,
-        version_label: formData.version_label
+        version_label: formData.version_label,
+        format_id: selectedFormat,
+        tag_ids,
       }, config);
 
-      // 2. Update version if a new version file is provided
+      // 3. Update version if a new version file is provided
       if (formData.version_file || formData.zip_file) {
         const versionForm = new FormData();
         versionForm.append('book_id', bookId);
@@ -248,7 +322,7 @@ export default function EditBookForm() {
         });
       }
 
-      // 3. Update cover if a new cover file is provided
+      // 4. Update cover if a new cover file is provided
       if (formData.cover_file) {
         const coverForm = new FormData();
         coverForm.append('book_id', bookId);
@@ -262,7 +336,7 @@ export default function EditBookForm() {
         });
       }
 
-      // 4. Resource file logic has been removed entirely.
+      // 5. Resource file logic has been removed entirely.
 
       setUploadComplete(true);
       setTimeout(() => {
@@ -352,6 +426,16 @@ export default function EditBookForm() {
         </label>
 
         <label>
+          Book Format:
+          <select name="format_id" value={selectedFormat} onChange={handleFormatChange} required>
+            <option value="">-- Select Format --</option>
+            {formats.map(f => (
+              <option key={f.format_id} value={f.format_id}>{f.format_name}</option>
+            ))}
+          </select>
+        </label>
+
+        <label>
           Version Label:
           <input type="text" name="version_label" value={formData.version_label} placeholder="e.g. v1.0, Revised Edition" onChange={handleChange} required/>
           {versionError && <span className="error-message">{versionError}</span>}
@@ -361,7 +445,7 @@ export default function EditBookForm() {
           ISBN Code:
           <input type="text" name="isbn_code" value={formData.isbn_code} placeholder="Enter ISBN Code" onChange={handleChange} maxLength={17}/>
           {isbnError && <span className="error-message">{isbnError}</span>}
-        </label>
+        </label> <br />
 
         <label>
           Upload New Version File (PDF):
@@ -378,7 +462,58 @@ export default function EditBookForm() {
           <input type="file" name="cover_file" accept="application/pdf" onChange={handleChange}/>
         </label>
 
-        {/* Resource File Input Removed */}
+<label className="full-width">
+  Tags:
+  <div className="tag-input-container">
+    <div className="tag-input-field-wrapper">
+      <input
+        type="text"
+        placeholder="Add or select a tag"
+        value={tagInput}
+        onChange={handleTagInputChange}
+        onKeyDown={handleTagInputKeyDown}
+        className="tag-input-field"
+      />
+      <button
+        type="button"
+        className="tag-input-add-btn"
+        onClick={() => handleTagInputKeyDown({ key: 'Enter', preventDefault: () => {} })}
+      >
+        + Add
+      </button>
+    </div>
+
+    {/* Suggestions Dropdown */}
+    {tagOptions.filter(t => t.tag_name.toLowerCase().includes(tagInput.toLowerCase()) && !selectedTags.some(st => st.tag_id === t.tag_id)).length > 0 && (
+      <div className="tag-suggestions-list">
+        {tagOptions
+          .filter(t => t.tag_name.toLowerCase().includes(tagInput.toLowerCase()) && !selectedTags.some(st => st.tag_id === t.tag_id))
+          .map(t => (
+            <div
+              key={t.tag_id}
+              className="tag-suggestion-item"
+              onClick={() => handleTagSelect(t)}
+            >
+              {t.tag_name}
+            </div>
+          ))}
+      </div>
+    )}
+
+    {/* Selected Tags Area */}
+    {selectedTags.length > 0 && (
+        <div className="selected-tags-container">
+            {selectedTags.map(tag => (
+            <div key={tag.tag_id || tag.tag_name} className="selected-tag-pill">
+                <span>{tag.tag_name}</span>
+                <span className="remove-tag-btn" onClick={() => handleRemoveTag(tag)}>x</span>
+            </div>
+            ))}
+        </div>
+    )}
+  </div>
+</label>
+
       </div>
 
       <button type="submit" className="submit-btn" disabled={isSubmitting}>

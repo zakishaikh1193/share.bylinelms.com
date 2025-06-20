@@ -23,6 +23,8 @@ const bookTypeRoutes = require('./routes/bookTypeRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const logRoutes = require('./routes/logRoutes');
 const path = require('path');
+const bookFormatRoutes = require('./routes/bookFormatRoutes');
+const tagRoutes = require('./routes/tagRoutes');
 
 
 app.get('/api', (req, res) => res.send('Book Sharing API Running'));
@@ -40,5 +42,7 @@ app.use('/api/books', booksRoutes);
 app.use('/api/booktypes', bookTypeRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin/activity-logs', logRoutes);
+app.use('/api/book-formats', bookFormatRoutes);
+app.use('/api/tags', tagRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

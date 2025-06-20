@@ -58,7 +58,8 @@ const BooksTable = () => {
       getLanguageName(book.language_id).toLowerCase().includes(lowerCaseSearchTerm) ||
       getGradeName(book.grade_id).toLowerCase().includes(lowerCaseSearchTerm) ||
       getSubjectName(book.subject_id).toLowerCase().includes(lowerCaseSearchTerm) ||
-      getStandardName(book.standard_id).toLowerCase().includes(lowerCaseSearchTerm)
+      getStandardName(book.standard_id).toLowerCase().includes(lowerCaseSearchTerm) ||
+      (book.tags?.some(tag => tag.tag_name.toLowerCase().includes(lowerCaseSearchTerm)))
     );
   });
 
@@ -125,6 +126,8 @@ const BooksTable = () => {
             <th>Grade</th>
             <th>Subject</th>
             <th>Standards</th>
+            <th>Format</th>
+            <th>Tags</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -145,6 +148,8 @@ const BooksTable = () => {
                 <td>{getGradeName(book.grade_id)}</td>
                 <td>{getSubjectName(book.subject_id)}</td>
                 <td>{getStandardName(book.standard_id)}</td>
+                <td>{book.format_name || "—"}</td>
+                <td>{book.tags?.map(t => t.tag_name).join(', ') || "—"}</td>
                  <td>
                   <div className="action-buttons">
                     <button

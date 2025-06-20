@@ -434,3 +434,86 @@
   background-color: #f1f3f5;
   color: #495057;
 }
+
+/* ========================================================================== */
+/* ========================= SEARCH HEADER & BAR ============================ */
+/* ========================================================================== */
+.bookx-content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* Allows stacking on smaller screens */
+  gap: 1.5rem;
+  margin-bottom: 28px; /* Original margin-bottom from .bookx-content-heading */
+}
+.bookx-content-header .bookx-content-heading {
+  margin-bottom: 0; /* Remove margin from h2 as it's now on the container */
+}
+.bookx-search-bar {
+  padding: 0.8rem 1rem;
+  font-size: 0.95rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 380px; /* A bit wider for the main page */
+  transition: all 0.2s ease-in-out;
+  background-color: #f8fafc;
+}
+.bookx-search-bar:focus,
+.bookx-search-bar:focus-visible {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  background-color: #fff;
+}
+
+/* --- Professional Search Bar with Icon --- */
+
+/* The container that holds the icon and the input */
+.search-container {
+  position: relative;
+  width: 100%;
+}
+
+/* The search icon itself (SVG) */
+.search-icon {
+  position: absolute;
+  /* Vertically center the icon */
+  top: 50%;
+  transform: translateY(-50%);
+  /* Position from the left */
+  left: 16px;
+  width: 20px;
+  height: 20px;
+  color: #a0aec0; /* Muted color for the icon */
+  pointer-events: none; /* Allows clicks to go "through" the icon to the input */
+}
+
+.bookx-search-bar {
+  width: 100%;
+  /* Add extra padding on the left to make space for the icon */
+  padding: 12px 18px 12px 50px; 
+  box-sizing: border-box;
+  font-size: 1rem;
+  color: #333;
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.bookx-search-bar::placeholder {
+  color: #a0aec0;
+}
+
+.bookx-search-bar:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+/* When the input is focused, make the icon slightly darker */
+.bookx-search-bar:focus + .search-icon, 
+.search-container:focus-within .search-icon {
+  color: #4a5568;
+}

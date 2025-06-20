@@ -1639,3 +1639,67 @@ body {
 .book-card-issued-button:active {
   transform: translateY(0);
 }
+
+/* src/pages/Dashboards/Users/issuedBook.css */
+
+/* --- Aesthetic Tag Styling --- */
+
+/* 1. Style the containers that hold the tags */
+.book-details-tags,
+.book-card-issued-tags {
+  display: flex;
+  flex-wrap: wrap; /* Allows tags to wrap to the next line */
+  gap: 8px;        /* Creates consistent spacing between each tag pill */
+  margin-top: 1rem;
+}
+
+/* 2. Define the base style for every tag "pill" */
+.book-detail-tag,
+.book-card-issued-tag {
+  display: inline-block; /* Allows padding and other box properties */
+  padding: 5px 14px;     /* Vertical and horizontal padding */
+  border-radius: 16px;   /* This creates the pill shape */
+  font-size: 0.8rem;     /* A smaller, more appropriate font size */
+  font-weight: 600;      /* Makes the text slightly bolder */
+  line-height: 1.2;      /* Ensures consistent vertical alignment */
+  white-space: nowrap;   /* Prevents long tags from breaking into two lines */
+  cursor: default;       /* Shows a default cursor instead of a text-select cursor */
+}
+
+/* 3. Create a beautiful color cycle for the tags */
+/* This uses the :nth-of-type selector to automatically cycle through colors */
+
+/* Color 1: Blue */
+.book-detail-tag:nth-of-type(5n + 1),
+.book-card-issued-tag:nth-of-type(5n + 1) {
+  background-color: #e0f2fe; /* Light Blue */
+  color: #0c599c;           /* Dark Blue Text */
+}
+
+/* Color 2: Green */
+.book-detail-tag:nth-of-type(5n + 2),
+.book-card-issued-tag:nth-of-type(5n + 2) {
+  background-color: #dcfce7; /* Light Green */
+  color: #15803d;           /* Dark Green Text */
+}
+
+/* Color 3: Purple */
+.book-detail-tag:nth-of-type(5n + 3),
+.book-card-issued-tag:nth-of-type(5n + 3) {
+  background-color: #f3e8ff; /* Light Purple */
+  color: #6b21a8;           /* Dark Purple Text */
+}
+
+/* Color 4: Orange */
+.book-detail-tag:nth-of-type(5n + 4),
+.book-card-issued-tag:nth-of-type(5n + 4) {
+  background-color: #ffedd5; /* Light Orange */
+  color: #9a3412;           /* Dark Orange Text */
+}
+
+/* Color 5: Red */
+.book-detail-tag:nth-of-type(5n),
+.book-card-issued-tag:nth-of-type(5n) {
+  background-color: #fee2e2; /* Light Red */
+  color: #991b1b;           /* Dark Red Text */
+}

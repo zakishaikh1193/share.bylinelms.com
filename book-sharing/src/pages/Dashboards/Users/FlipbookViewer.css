@@ -12,7 +12,7 @@
   animation: fadeIn 0.3s ease;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
+ 
 .flipbook-modal-content {
   position: relative;
   width: 100%;
@@ -21,8 +21,7 @@
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  /* NEW: This creates the 3D space for the flip animation to feel more realistic */
-  perspective: 2500px; 
+  perspective: 2500px;
 }
 .flipbook-wrapper {
   display: flex;
@@ -30,9 +29,8 @@
   align-items: center;
   transition: transform 0.3s ease;
   transform-origin: center center;
-  
 }
-
+ 
 .modal-close-button {
   position: absolute;
   top: 20px;
@@ -55,7 +53,7 @@
   background: rgba(255, 255, 255, 0.2);
   transform: scale(1.1);
 }
-
+ 
 .loading-container {
   display: flex; flex-direction: column; justify-content: center; align-items: center;
   color: white; font-size: 1.2rem; text-shadow: 1px 1px 2px black;
@@ -65,20 +63,19 @@
   border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-
+ 
 .flipbook-component {
   box-shadow: none;
 }
 .page {
   background-color: #fff;
-  border: 0.5px dotted rgba(0, 0, 0, 0.05);
 }
 .page-image {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
-
+ 
 /* --- MODIFIED: Bottom Control Bar --- */
 .flipbook-bottom-bar {
   position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -102,7 +99,7 @@
 .flipbook-bottom-bar button svg {
   width: 24px; height: 24px; fill: currentColor;
 }
-
+ 
 /* NEW: Separator style */
 .separator {
   width: 1px;
@@ -110,7 +107,7 @@
   background-color: rgba(255, 255, 255, 0.2);
   margin: 0 8px;
 }
-
+ 
 .page-nav-controls {
   display: flex; align-items: center; gap: 5px;
 }
@@ -136,4 +133,63 @@
 .flipbook-wrapper.rtl-book {
   transform-origin: center center;
   transform: scaleX(-1); /* The horizontal flip! */
+}
+ 
+ 
+.flipbook-component .page {
+  /* Optional: Give pages a very subtle off-white color */
+  background-color: #fdfdfd;
+}
+/* --- NEW: CSS for Realistic Thickness and Page Feel --- */
+ 
+/*
+  This is the key rule. It applies to the main flipbook component.
+  The multiple inset shadows mimic the layered edges of paper.
+*/
+.flipbook-component.realistic-thickness::after {
+  content: '';
+  position: absolute;
+  top: 2%; /* Start the shadow slightly below the top edge */
+  left: 50%;
+ 
+  /* Make the shadow element narrower for a more defined line */
+  width: 10px;
+ 
+  /* Stop it slightly before the bottom edge for a more natural look */
+  height: 96%;
+ 
+  /*
+    This is the key change. This gradient creates a very fine dark line
+    in the center with a very fast fade-out.
+  */
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.15) 40%, /* A very light shadow builds up */
+    rgba(0, 0, 0, 0.4) 50%,  /* The sharp, dark center line */
+    rgba(0, 0, 0, 0.15) 60%, /* Fades back out quickly */
+    rgba(0, 0, 0, 0) 100%
+  );
+ 
+  /* The rest of the properties remain the same */
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 10;
+ 
+  /* Optional: Adds a very slight blur to soften the line */
+  filter: blur(0.5px);
+}
+ 
+/*
+  This rule makes the individual pages feel more like paper
+  by changing the pure white background to a softer, off-white.
+*/
+.page.realistic-page {
+  background-color: #eceaea; /* A very subtle off-white */
+}
+ 
+/* Optional: If your images have transparency, this ensures they blend well */
+.page.realistic-page .page-image {
+  mix-blend-mode:multiply ;
+  /* Note: 'multiply' can make images darker. Use if it looks good, otherwise remove. */
 }
