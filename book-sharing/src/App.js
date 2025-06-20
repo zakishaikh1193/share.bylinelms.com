@@ -11,7 +11,6 @@ import UserRoute from './components/UserRoute';
 import RequestAccess from "./pages/Inputs/RequestAccess";
 import ActivityLog from "./pages/Inputs/ActivityLog";
 import ClientInputs from "./pages/Inputs/ClientInputs";
-import MinistryReviews from "./pages/Inputs/MinistryReviews";
 import AddBook from './pages/manageDeliverables/AddBook.jsx';
 import ManageAccess from './pages/manage-user/ManageAccess.jsx';
 import DisplayCover from './pages/explorePage/coverDisplay.jsx';
@@ -56,7 +55,6 @@ function App() {
           <Route path="request-access" element={<RequestAccess />} />
           <Route path="activity-log" element={<ActivityLog />} />
           <Route path="client-inputs" element={<ClientInputs />} />
-          <Route path="ministry-reviews" element={<MinistryReviews />} />
           <Route path="manage-access" element={<ManageAccess />} />
           <Route path="edit-user/:userId" element={<EditUser />} />
           <Route path="edit-book/:bookId" element={<EditBook />} />

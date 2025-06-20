@@ -80,7 +80,6 @@ function Dashboard() {
         { label: "Request Access", link: "/admin/request-access" },
         { label: "Activity Log", link: "/admin/activity-log" },
         { label: "Client Inputs", link: "/admin/client-inputs" },
-        { label: "Ministry Reviews", link: "/admin/ministry-reviews" },
       ],
     },
     {

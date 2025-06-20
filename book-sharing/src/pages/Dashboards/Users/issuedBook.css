@@ -1428,3 +1428,214 @@ body {
     max-width: 100%; /* Full width on mobile */
   }
 }
+/* ============================================== */
+/* ===         ISSUED BOOK PAGE STYLES        === */
+/* ============================================== */
+
+/* Main Page Layout */
+.app-container.issued-books {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background-color: #f7faff; /* Lighter, cleaner background */
+}
+
+@media (min-width: 768px) {
+  .app-container.issued-books {
+    flex-direction: row;
+  }
+}
+
+.books-list-container.issued-books {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .books-list-container.issued-books {
+    flex-direction: row;
+  }
+}
+
+/* Sidebar Styles */
+.filter-sidebar {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  height: fit-content;
+  position: sticky;
+  top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .filter-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+  }
+}
+
+.sidebar-heading {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #eef2f7;
+}
+
+/* Filter Category Styling (inside sidebar) */
+.filter-category.issued-books {
+  margin-bottom: 1rem;
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.filter-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  background-color: #f8fafc;
+}
+.filter-title strong {
+  font-weight: 600;
+}
+.toggle-icon {
+  transition: transform 0.2s;
+}
+.filter-title[aria-expanded="true"] .toggle-icon {
+  transform: rotate(180deg);
+}
+.filter-options {
+  padding: 1rem;
+  list-style: none;
+  margin: 0;
+}
+.filter-options li {
+  margin-bottom: 0.5rem;
+}
+.filter-options label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+
+/* Main Content Area */
+.books-content-main {
+  flex-grow: 1;
+}
+.content-heading {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem 0;
+}
+
+/* Grid for Book Cards */
+.books-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+
+/* ============================================== */
+/* ===     NEW AESTHETIC BOOK CARD STYLES     === */
+/* ============================================== */
+
+.book-card-issued {
+  background-color: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(41, 52, 73, 0.08);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.book-card-issued:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(41, 52, 73, 0.12);
+}
+
+.book-card-issued-image-wrapper {
+  background-color: #f7fafc; /* A light grey background for the image area */
+  padding: 1rem; /* Creates the white border effect inside the card */
+}
+
+.book-card-issued-image-wrapper .pdf-cover-preview {
+  border-radius: 8px; /* Optional: slightly rounded corners for the cover itself */
+}
+
+.book-card-issued-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  padding: 1.25rem;
+  text-align: left;
+}
+
+.book-card-issued-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+}
+
+.book-card-issued-subtitle {
+  font-size: 0.85rem;
+  color: #718096;
+  margin: 0.25rem 0 1rem 0;
+}
+
+.book-card-issued-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.book-card-issued-tag {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Tag Color Palette (same as before, but using the new class) */
+.book-card-issued-tag:nth-child(4n + 1) { background-color: #e0e7ff; color: #3730a3; } /* Indigo */
+.book-card-issued-tag:nth-child(4n + 2) { background-color: #d1fae5; color: #047857; } /* Green */
+.book-card-issued-tag:nth-child(4n + 3) { background-color: #fef3c7; color: #92400e; } /* Amber */
+.book-card-issued-tag:nth-child(4n + 4) { background-color: #fee2e2; color: #991b1b; } /* Red */
+
+
+.book-card-issued-button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #4f46e5; /* A strong, modern blue */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+  margin-top: auto; /* Pushes button to the bottom */
+}
+
+.book-card-issued-button:hover {
+  background-color: #4338ca;
+  transform: translateY(-2px);
+}
+
+.book-card-issued-button:active {
+  transform: translateY(0);
+}

@@ -1,24 +1,24 @@
 const pool = require('../config/db');
 const path = require('path');
 const fs = require('fs');
+const { logActivity } = require('../utils/logger');
 
 const reviewController = {
-  createReview: async (req, res) => {
+createReview: async (req, res) => {
     try {
       const { subject, description, book_id } = req.body;
       const user_id = req.user.user_id;
       const file_path = req.file ? req.file.path.replace(/\\/g, '/') : null;
 
       const [result] = await pool.query(
-        `INSERT INTO book_user_reviews (
-          book_id,
-          user_id,
-          subject,
-          description,
-          file_path
-        ) VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO book_user_reviews (book_id, user_id, subject, description, file_path) VALUES (?, ?, ?, ?, ?)`,
         [book_id, user_id, subject, description, file_path]
       );
+      
+      // --- LOG ACTIVITY ---
+      const [[book]] = await pool.query('SELECT title FROM books WHERE book_id = ?', [book_id]);
+      logActivity(user_id, 'SUBMIT_REVIEW', { bookId: book_id, bookTitle: book?.title || 'N/A', reviewSubject: subject });
+      // --------------------
 
       res.json({ review_id: result.insertId });
     } catch (err) {

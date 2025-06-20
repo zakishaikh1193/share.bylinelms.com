@@ -3,6 +3,7 @@
 const pool = require('../config/db');
 const path = require("path");
 const fs = require("fs");
+const { logActivity } = require('../utils/logger');
 module.exports = {
 
   streamCover: async (req, res) => {
@@ -34,11 +35,13 @@ streamBookVersion: async (req, res) => {
 
     // Get latest version
     const [[version]] = await pool.query(
-      `SELECT uploaded_link FROM book_versions
-       WHERE book_id = ?
-       ORDER BY version_id DESC LIMIT 1`,
-      [bookId]
-    );
+        `SELECT v.uploaded_link, b.title AS book_title 
+         FROM book_versions v
+         JOIN books b ON v.book_id = b.book_id
+         WHERE v.book_id = ?
+         ORDER BY v.version_id DESC LIMIT 1`,
+        [bookId]
+      );
 
     if (!version) return res.status(404).json({ error: "Book not found" });
 
@@ -54,11 +57,14 @@ streamBookVersion: async (req, res) => {
       if (!access) return res.status(403).json({ error: "Access denied" });
     }
 
-    const filePath = path.resolve(__dirname, '..', version.uploaded_link.replace(/^(\.\.[\/\\])+/, '').replace(/^([\/\\])/, ''));
+    const filePath = version.uploaded_link;
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: "File not found" });
     }
+
+    // --- LOG ACTIVITY ---
+      logActivity(user_id, 'READ_BOOK', { bookId: parseInt(bookId), bookTitle: version.book_title });
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline");
@@ -147,12 +153,33 @@ streamBookVersion: async (req, res) => {
   uploadCover: async (req, res) => {
     try {
       const { book_id } = req.body;
-      if (!req.file) return res.status(400).json({ error: 'No image file uploaded' });
+      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
  
       const uploaded_link = req.file.path;
       await pool.query(`INSERT INTO covers (book_id, uploaded_link) VALUES (?, ?)`, [book_id, uploaded_link]);
       res.json({ success: true });
     } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  updateCover: async (req, res) => {
+    try {
+      const { bookId } = req.params;
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No cover file uploaded' });
+      }
+
+      // To "update" a cover, we simply add a new row.
+      // The queries are designed to fetch the LATEST cover by MAX(cover_id).
+      // This preserves history and matches the logic of `uploadCover`.
+      const uploaded_link = req.file.path;
+      await pool.query(`INSERT INTO covers (book_id, uploaded_link) VALUES (?, ?)`, [bookId, uploaded_link]);
+      
+      res.json({ success: true, message: 'Cover updated successfully' });
+    } catch (err) {
+      console.error('Error updating cover:', err);
       res.status(500).json({ error: err.message });
     }
   },
@@ -261,12 +288,6 @@ getBooks: async (req, res) => {
       const user_id = req.user.user_id;
       const { book_id } = req.body;
 
-        console.log("Received from frontend:", {
-  user_id: req.user.user_id,
-  book_id: req.body.book_id
-});
-
-       console.log("Received from frontend:", { user_id, book_id });
 
     const [result] = await pool.query(
       `INSERT INTO book_control (user_id, book_id, permission, can_download)
@@ -277,7 +298,10 @@ getBooks: async (req, res) => {
       [user_id, book_id]
     );
 
-    console.log("Rows affected:", result.affectedRows);
+     // --- LOG ACTIVITY ---
+      const [[book]] = await pool.query('SELECT title FROM books WHERE book_id = ?', [book_id]);
+      logActivity(user_id, 'REQUEST_ACCESS', { bookId: book_id, bookTitle: book?.title || 'N/A' });
+
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -481,6 +505,9 @@ downloadBookZip: async (req, res) => {
       return res.status(404).json({ error: 'ZIP file missing on server' });
     }
 
+    // --- LOG ACTIVITY ---
+      logActivity(user_id, 'DOWNLOAD_ZIP', { bookId: parseInt(bookId), bookTitle: version.book_title, versionLabel });
+
     res.setHeader("Content-Type", "application/zip");
     res.setHeader(
       "Content-Disposition",
@@ -557,6 +584,9 @@ downloadBookVersion: async (req, res) => {
       console.error("File not found:", filePath);
       return res.status(404).json({ error: "File not found" });
     }
+
+    // --- LOG ACTIVITY ---
+      logActivity(user_id, 'DOWNLOAD_PDF', { bookId: parseInt(bookId), bookTitle: version.book_title, versionLabel });
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${path.basename(filePath)}"`);
@@ -640,6 +670,10 @@ downloadCover: async (req, res) => {
     if (!control.can_download && role !== 'admin') {
       return res.status(403).json({ error: "Download permission denied" });
     }
+
+    // --- LOG ACTIVITY ---
+      const [[book]] = await pool.query('SELECT title FROM books WHERE book_id = ?', [bookId]);
+      logActivity(user_id, 'DOWNLOAD_COVER', { bookId: parseInt(bookId), bookTitle: book?.title || 'N/A' });
 
     // Step 3: Send the cover file
     res.setHeader("Content-Type", "application/pdf");
@@ -940,51 +974,58 @@ approveAccessRequest: async (req, res) => {
   },
 
   updateBookVersion: async (req, res) => {
-  try {
-    const { versionId } = req.params;
-    const { version_label, isbn_code } = req.body;
+    try {
+      const { versionId } = req.params;
+      const { version_label, isbn_code } = req.body;
 
-    const updateFields = [];
-    const values = [];
+      // <-- FIX: Correctly access files from req.files provided by multer
+      const pdfFile = req.files?.version_file ? req.files.version_file[0].path : null;
+      const zipFile = req.files?.zip_file ? req.files.zip_file[0].path : null;
 
-    if (version_label) {
-      updateFields.push('version_label = ?');
-      values.push(version_label);
+      const updateFields = [];
+      const values = [];
+
+      // Build the query dynamically based on what was provided
+      if (version_label) {
+        updateFields.push('version_label = ?');
+        values.push(version_label);
+      }
+      if (isbn_code) {
+        updateFields.push('isbn_code = ?');
+        values.push(isbn_code);
+      }
+      if (pdfFile) {
+        updateFields.push('uploaded_link = ?');
+        values.push(pdfFile);
+      }
+      if (zipFile) {
+        updateFields.push('zip_link = ?');
+        values.push(zipFile);
+      }
+
+      if (updateFields.length === 0) {
+        // This can happen if only book details were changed, not files.
+        // It's not an error, just means we don't need to update the version files.
+        return res.json({ success: true, message: 'No version files to update.' });
+      }
+
+      values.push(versionId); // Add versionId for the WHERE clause
+
+      const [result] = await pool.query(
+        `UPDATE book_versions SET ${updateFields.join(', ')} WHERE version_id = ?`,
+        values
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Version not found' });
+      }
+
+      res.json({ success: true, message: 'Book version updated successfully' });
+    } catch (err) {
+      console.error('Error updating book version:', err);
+      res.status(500).json({ error: 'Internal server error' });
     }
-    if (isbn_code) {
-      updateFields.push('isbn_code = ?');
-      values.push(isbn_code);
-    }
-    if (pdfFile) {
-      updateFields.push('uploaded_link = ?');
-      values.push(pdfFile);
-    }
-    if (zipFile) {
-      updateFields.push('zip_link = ?');
-      values.push(zipFile);
-    }
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No update fields provided' });
-    }
-
-    values.push(versionId);
-
-    const [result] = await pool.query(
-      `UPDATE book_versions SET ${updateFields.join(', ')} WHERE version_id = ?`,
-      values
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Version not found' });
-    }
-
-    res.json({ success: true, message: 'Book version updated successfully' });
-  } catch (err) {
-    console.error('Error updating book version:', err);
-    res.status(500).json({ error: 'Internal server error' });
   }
-}
 
 
 };

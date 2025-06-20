@@ -341,23 +341,47 @@ function BooksList({ books, onReadMore, filterOptions }) {
         ) : (
           <div className="books-grid">
             {filteredBooks.map((book) => (
-              <div key={book.book_id || book.book_id} className="book-card">
-                <PDFCoverPreview pdfUrl={`/api/books/${book.book_id}/stream-cover`} width={300} height={360} />
-                <div className="book-card-content">
-                  <h3 className="book-card-title">{book.title}</h3>
-                  <p className="book-card-description">{book.description}</p>
-                  <div className="book-card-meta">
-                    <span><strong>Subject:</strong> {book.subject}</span>
-                    <span><strong>Grade:</strong> {book.grade}</span>
-                    <span><strong>Version:</strong> {book.version}</span>
-                    <span><strong>Type:</strong> {book.type}</span>
-                    <span><strong>Language:</strong> {book.language}</span>
-                    <span><strong>Country:</strong> {book.country || book.country_name || "N/A"}</span>
-                    <span><strong>ISBN:</strong> {book.isbn}</span>
-                  </div>
-                  <button onClick={() => onReadMore(book)} className="book-card-button" type="button">Read More</button>
-                </div>
-              </div>
+              <div key={book.book_id || book.id} className="book-card-issued">
+  <div className="book-card-issued-image-wrapper">
+    <PDFCoverPreview 
+      pdfUrl={`/api/books/${book.book_id}/stream-cover`} 
+      width={300} 
+      height={420} // Adjusted for a taller book look
+    />
+  </div>
+  <div className="book-card-issued-content">
+    <h3 className="book-card-issued-title">{book.title}</h3>
+    <p className="book-card-issued-subtitle">{book.description ? book.description.substring(0, 40) + '...' : book.isbn}</p>
+    
+    <div className="book-card-issued-tags">
+      {book.grade && book.grade !== 'N/A' && 
+        <span className="book-card-issued-tag">{book.grade}</span>
+      }
+      {book.subject && book.subject !== 'N/A' && 
+        <span className="book-card-issued-tag">{book.subject}</span>
+      }
+      {book.version && book.version !== 'N/A' && 
+        <span className="book-card-issued-tag">{book.version}</span>
+      }
+      {book.type && book.type !== 'N/A' && 
+        <span className="book-card-issued-tag">{book.type}</span>
+      }
+      {book.language && book.language !== 'N/A' && 
+        <span className="book-card-issued-tag">{book.language}</span>
+      }
+      {book.country && book.country !== 'N/A' && 
+        <span className="book-card-issued-tag">{book.country}</span>
+      }
+      {book.isbn && book.isbn !== 'N/A' && 
+        <span className="book-card-issued-tag">{book.isbn}</span>
+      }
+    </div>
+    
+    <button onClick={() => onReadMore(book)} className="book-card-issued-button" type="button">
+      Read More
+    </button>
+  </div>
+</div>
             ))}
           </div>
         )}

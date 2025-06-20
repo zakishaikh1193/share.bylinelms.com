@@ -45,6 +45,8 @@ router.get(
 // COVER upload
 router.post('/covers', authenticateAdmin, upload.single('file'), bookController.uploadCover);
 
+router.put('/covers/:bookId', authenticateAdmin, upload.single('file'), bookController.updateCover);
+
 // EXTRA uploads
 router.post('/uploads', authenticateAdmin, upload.single('file'), bookController.uploadExtraResources);
 

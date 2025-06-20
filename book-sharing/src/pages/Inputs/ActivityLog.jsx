@@ -1,150 +1,109 @@
 import React, { useEffect, useState } from 'react';
-import '../../styles/inputs-Css/ActivityLog.css';
-import axios from 'axios';
+import axios from '../../axiosConfig'; // Make sure this points to your configured axios instance
+import '../../styles/inputs-Css/ActivityLog.css'; // Your existing CSS file
+
+// A helper function to create a human-readable description from the log data
+const formatLogDetails = (action, detailsString) => {
+  let details;
+  try {
+    // The 'details' from the DB is a string, so we need to parse it into an object
+    details = JSON.parse(detailsString);
+  } catch (e) {
+    // If parsing fails, return the raw string
+    return detailsString || 'No additional details.';
+  }
+
+  // Use a switch statement to handle different actions cleanly
+  switch (action) {
+    case 'USER_LOGIN':
+      return `User logged in from IP: ${details.ipAddress || 'Unknown'}`;
+    case 'READ_BOOK':
+      return `Viewed book: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId})`;
+    case 'DOWNLOAD_PDF':
+      return `Downloaded PDF for: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId}, Version: ${details.versionLabel})`;
+    case 'DOWNLOAD_ZIP':
+      return `Downloaded ZIP for: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId}, Version: ${details.versionLabel})`;
+    case 'DOWNLOAD_COVER':
+      return `Downloaded cover for: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId})`;
+    case 'REQUEST_ACCESS':
+      return `Requested access for book: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId})`;
+    case 'SUBMIT_REVIEW':
+      return `Submitted a review for book: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId}) with subject: "${details.reviewSubject}"`;
+    default:
+      // A fallback for any other actions
+      return JSON.stringify(details, null, 2);
+  }
+};
 
 function ActivityLog() {
   const [logs, setLogs] = useState([]);
-  const [useMock, setUseMock] = useState(true); // Toggle mock data usage
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (useMock) {
-      loadMockData();
-    } else {
-      fetchLogsFromDatabase();
-    }
-  }, [useMock]);
-
-  // Mock Data Loader
-  const loadMockData = () => {
-    const mock = [
-      {
-        id: 1,
-        userName: "Mr. Ahmed Alharbi",
-        userEmail: "ahmed@riyadhschools.edu.sa",
-        organization: "Riyadh Secondary School",
-        action: "Logged In",
-        location: "Riyadh, Saudi Arabia",
-        timestamp: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        userName: "Dr. Lina Khalid",
-        userEmail: "lina@alfaisaluniv.edu",
-        organization: "Alfaisal University",
-        action: "Downloaded 'Physics 101 Course Material'",
-        location: "Riyadh, Saudi Arabia",
-        timestamp: new Date().toISOString(),
-        downloadLink: "/downloads/physics_101_course_material.pdf", // add download link field
-      },
-      {
-        id: 3,
-        userName: "Ms. Noura Alshammari",
-        userEmail: "noura@jeddahuniversity.edu.sa",
-        organization: "Jeddah University",
-        action: "Logged Out",
-        location: "Jeddah, Saudi Arabia",
-        timestamp: new Date().toISOString(),
-      },
-      {
-        id: 4,
-        userName: "Mr. Saeed Alotaibi",
-        userEmail: "saeed@dammamschools.edu.sa",
-        organization: "Dammam International School",
-        action: "Downloaded 'Coding Workbook Grade 8'",
-        location: "Dammam, Saudi Arabia",
-        timestamp: new Date().toISOString(),
-        downloadLink: "/downloads/coding_workbook_grade_8.pdf",
-      },
-      {
-        id: 5,
-        userName: "Dr. Lina Khalid",
-        userEmail: "lina@alfaisaluniv.edu",
-        organization: "Alfaisal University",
-        action: "Logged Out",
-        location: "Riyadh, Saudi Arabia",
-        timestamp: new Date().toISOString(),
-      },
-    ];
-    setLogs(mock);
-  };
-
-  // Future API Data Fetcher
-  const fetchLogsFromDatabase = async () => {
-    try {
-      const response = await axios.get('/api/activity-logs'); // <-- Replace with real endpoint
-      if (response.data && Array.isArray(response.data)) {
+    const fetchLogs = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const token = localStorage.getItem('token');
+        const response = await axios.get('/api/admin/activity-logs', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setLogs(response.data);
-      } else {
-        setUseMock(true); // fallback if data isn't valid
+      } catch (err) {
+        console.error('Failed to fetch activity logs:', err);
+        setError('Could not load activity logs. Please try again later.');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to fetch activity logs from database:', error);
-      setUseMock(true); // fallback if API fails
-    }
-  };
+    };
 
-  // Helper: Extract file name from action string
-  const extractFileName = (action) => {
-    const match = action.match(/Downloaded '(.+)'/);
-    return match ? match[1] : null;
-  };
+    fetchLogs();
+  }, []); // The empty dependency array means this runs once on component mount
 
   return (
     <div className="page-wrapper">
       <div className="activity-log-container">
         <h2>User Activity Log</h2>
-        <table className="activity-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>User</th>
-              <th>Email</th>
-              <th>Organization</th>
-              <th>Action</th>
-              <th>Location</th>
-              <th>Timestamp</th>
-              <th>Download</th> {/* New Download Column */}
-            </tr>
-          </thead>
-          <tbody>
-            {logs.length === 0 ? (
-              <tr><td colSpan="8">No activity logs found</td></tr>
-            ) : (
-              logs.map((log, index) => {
-                const isDownload = log.action.toLowerCase().includes("downloaded");
-                const fileName = extractFileName(log.action);
-
-                return (
-                  <tr key={log.id}>
-                    <td>{index + 1}</td>
-                    <td>{log.userName}</td>
-                    <td>{log.userEmail}</td>
-                    <td>{log.organization}</td>
-                    <td>{log.action}</td>
-                    <td>{log.location}</td>
-                    <td>{new Date(log.timestamp).toLocaleString()}</td>
+        <div className="table-responsive-wrapper">
+            <table className="activity-table">
+            <thead>
+                <tr>
+                <th>#</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Details</th>
+                <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {loading ? (
+                <tr><td colSpan="5" className="loading-state">Loading logs...</td></tr>
+                ) : error ? (
+                <tr><td colSpan="5" className="error-state">{error}</td></tr>
+                ) : logs.length === 0 ? (
+                <tr><td colSpan="5" className="empty-state">No activity logs found.</td></tr>
+                ) : (
+                logs.map((log, index) => (
+                    <tr key={log.id}>
+                    <td>{log.id}</td>
                     <td>
-                      {isDownload && fileName && log.downloadLink ? (
-                        <a
-                          href={log.downloadLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="download-btn"
-                          download
-                          title={`Download ${fileName}`}
-                        >
-                          {fileName}
-                        </a>
-                      ) : (
-                        '—'
-                      )}
+                        <div className="user-info">
+                        <span className="user-name">{log.user_name || 'N/A'}</span>
+                        <span className="user-email">{log.user_email || 'N/A'}</span>
+                        </div>
                     </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                    <td>
+                        <span className="action-tag">{log.action.replace(/_/g, ' ')}</span>
+                    </td>
+                    <td className="details-cell">{formatLogDetails(log.action, log.details)}</td>
+                    <td>{new Date(log.created_at).toLocaleString()}</td>
+                    </tr>
+                ))
+                )}
+            </tbody>
+            </table>
+        </div>
       </div>
     </div>
   );

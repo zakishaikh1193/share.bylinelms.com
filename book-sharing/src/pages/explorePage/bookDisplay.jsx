@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../axiosConfig';
 import '../../styles/explorePageCss/bookDisplay.css';
- import PDFCoverPreview from '../../components/PDFCoverPreview';
+import PDFCoverPreview from '../../components/PDFCoverPreview';
+// Import the FlipbookViewer to use it as a modal
+import FlipbookViewer from '../Dashboards/Users/FlipbookViewer';
+
 const FALLBACK_IMAGE_URL = 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=800&q=60';
- 
+
 const Books = () => {
   const [books, setBooks] = useState([]);
   const [grades, setGrades] = useState([]);
@@ -16,12 +19,16 @@ const Books = () => {
   const [filters, setFilters] = useState(initialFilters);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [selectedBook, setSelectedBook] = useState(null);
+  
+  // --- NEW: State to manage the Flipbook modal ---
+  const [flipbookBookId, setFlipbookBookId] = useState(null);
+  
   const navigate = useNavigate();
- 
+
   const toggleDropdown = (dropdownName) => {
     setActiveDropdown(activeDropdown === dropdownName ? null : dropdownName);
   };
- 
+
   const toggleFilter = (category, value) => {
     setFilters((prev) => {
       const current = prev[category].map(String);
@@ -30,58 +37,65 @@ const Books = () => {
       return { ...prev, [category]: updated };
     });
   };
- 
-  // --- NEW: Function to clear all filters ---
+
   const handleClearFilters = () => {
     setFilters(initialFilters);
   };
- 
+
   const getName = (list, id, key) => list.find((item) => String(item[key]) === String(id))?.[`${key.replace('_id', '')}_name`] || '—';
   const getGradeName = (id) => grades.find((g) => String(g.grade_id) === String(id))?.grade_level || '—';
- 
+
   const unique = (key) => {
     return [...new Set(books.map((b) => {
       switch (key) {
         case 'bookType': return b.book_type_title;
         case 'version': return b.version_label;
         case 'country': return b.country_name;
-        case 'isbn': return b.isbn_number;
+        case 'isbn': return b.isbn_code; // Changed from isbn_number
         default: return b[key];
       }
     }).filter((v) => v).map((v) => v.toString().trim()))];
   };
- 
+
   const formatFileSize = (bytes) => {
     if (!bytes || isNaN(bytes)) return 'N/A';
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
   };
- 
+
   useEffect(() => {
-    // ... Fetching logic remains the same ...
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
         const headers = { Authorization: `Bearer ${token}` };
-        const [booksRes, gradesRes, subjectsRes, languagesRes, standardsRes] = await Promise.all([
+        
+        // --- IMPROVED: Fetching and processing data like in issuedBook.jsx ---
+        const [booksRes, gradesRes, subjectsRes, languagesRes, standardsRes, bookTypesRes] = await Promise.all([
           axios.get('/api/books', { headers }),
           axios.get('/api/grades', { headers }),
           axios.get('/api/subjects', { headers }),
           axios.get('/api/languages', { headers }),
           axios.get('/api/standards', { headers }),
+          axios.get('/api/booktypes', { headers }),
         ]);
-        console.log('Raw book data:', booksRes.data.books[0]); // Log first book's data
-        const booksWithExtras = booksRes.data.books.map((book) => {
-          const isbn = book.isbn_code || (book.versions?.[0]?.isbn_code ?? 'N/A');
-          console.log(`Book ${book.title} ISBN:`, isbn);
-          return {
-            ...book,
-            version_label: book.version_label || (book.versions?.[0]?.version_label ?? 'N/A'),
-            isbn_number: isbn,
-            file_size: book.file_size || book.versions?.[0]?.file_size || null,
-          };
-        });
+
+        const gradeMap = new Map(gradesRes.data.map((g) => [g.grade_id, g.grade_level]));
+        const subjectMap = new Map(subjectsRes.data.map((s) => [s.subject_id, s.subject_name]));
+        const languageMap = new Map(languagesRes.data.map((l) => [l.language_id, l.language_name]));
+        const bookTypeMap = new Map(bookTypesRes.data.map((bt) => [bt.book_type_id, bt.book_type_title]));
+
+        const booksWithExtras = booksRes.data.books.map((book) => ({
+          ...book,
+          grade_name: gradeMap.get(book.grade_id) || 'N/A',
+          subject_name: subjectMap.get(book.subject_id) || 'N/A',
+          language_name: languageMap.get(book.language_id) || 'N/A',
+          book_type_title: bookTypeMap.get(book.booktype_id) || 'N/A',
+          version_label: book.version_label || 'N/A',
+          isbn_code: book.isbn_code || 'N/A',
+          file_size: book.file_size || book.versions?.[0]?.file_size || null,
+        }));
+
         setBooks(booksWithExtras);
         setFilteredBooks(booksWithExtras);
         setGrades(gradesRes.data);
@@ -94,24 +108,24 @@ const Books = () => {
     };
     fetchData();
   }, []);
- 
+
   useEffect(() => {
     const filtered = books.filter((book) => {
       const match = (list, val) => list.length === 0 || list.includes(String(val));
       return match(filters.grade, book.grade_id) && match(filters.subject, book.subject_id) &&
              match(filters.bookType, book.book_type_title) && match(filters.version, book.version_label) &&
              match(filters.country, book.country_name) && match(filters.language, book.language_id) &&
-             match(filters.standards, book.standard_id) && match(filters.isbn, book.isbn_number);
+             match(filters.standards, book.standard_id) && match(filters.isbn, book.isbn_code);
     });
     setFilteredBooks(filtered);
   }, [filters, books]);
- 
+
   const handleOverlayClick = (e) => {
     if (e.target.classList.contains('bookx-details-overlay')) {
       setSelectedBook(null);
     }
   };
- 
+
   return (
     <div className="bookx-container">
       <div className="bookx-sidebar">
@@ -124,7 +138,6 @@ const Books = () => {
             <div className={`bookx-filter-header ${activeDropdown === cat ? 'open' : ''}`} onClick={() => toggleDropdown(cat)}>
               <div className="filter-header-title">
                 <strong>{cat.charAt(0).toUpperCase() + cat.slice(1)}</strong>
-                {/* --- NEW: Active filter count --- */}
                 {filters[cat].length > 0 && <span className="filter-count">{filters[cat].length}</span>}
               </div>
               <span className={`chevron ${activeDropdown === cat ? 'open' : ''}`}>▼</span>
@@ -152,24 +165,65 @@ const Books = () => {
           </div>
         ))}
       </div>
- 
+
       <div className="bookx-content">
         <h2 className="bookx-content-heading">Books Available</h2>
         <div className="bookx-grid">
           {filteredBooks.length === 0 ? (<p className="bookx-no-books">No books match selected filters.</p>) : (
             filteredBooks.map((book) => (
-              <div key={book.book_id} className="bookx-card" onClick={() => setSelectedBook(book)}>
-                <div>
-                  <PDFCoverPreview pdfUrl={`/api/books/${book.book_id}/stream-cover`} width={400} height={460} className="bookx-card-image" />
-                  <button className="bookx-card-hover-button" onClick={(e) => { e.stopPropagation(); setSelectedBook(book); }}>
-                    View Details
-                  </button>
-                </div>
-                <div className="bookx-card-info">
-                  <h4 className="bookx-card-title">{book.title}</h4>
-                  <p className="bookx-card-description">{book.description ? book.description.substring(0, 80) + (book.description.length > 80 ? '...' : '') : 'Click to learn more about this book.'}</p>
-                </div>
-              </div>
+              // In bookDisplay.jsx, replace the content inside your filteredBooks.map()
+
+<div key={book.book_id} className="bookx-card" onClick={() => setSelectedBook(book)}>
+  {/* The image and hover effect container remains the same */}
+  <div className="bookx-card-image-container">
+    <PDFCoverPreview 
+      pdfUrl={`/api/books/${book.book_id}/stream-cover`} 
+      width={400} 
+      height={460} 
+      className="bookx-card-image"
+    />
+    <div className="bookx-card-hover-overlay">
+      <button 
+        className="bookx-card-hover-button" 
+        onClick={(e) => { e.stopPropagation(); setSelectedBook(book); }}>
+        View Details
+      </button>
+    </div>
+  </div>
+
+  {/* The info container is now better structured */}
+  <div className="bookx-card-info">
+    <h4 className="bookx-card-title">{book.title}</h4>
+    <p className="bookx-card-description">
+      {book.description ? book.description.substring(0, 80) + (book.description.length > 80 ? '...' : '') : 'Click to learn more about this book.'}
+    </p>
+
+    {/* This is the new container for all the metadata tags */}
+    <div className="bookx-card-tags-container">
+      {book.grade_name && book.grade_name !== 'N/A' && 
+        <span className="bookx-card-tag">{book.grade_name}</span>
+      }
+      {book.subject_name && book.subject_name !== 'N/A' && 
+        <span className="bookx-card-tag">Subject: {book.subject_name}</span>
+      }
+      {book.language_name && book.language_name !== 'N/A' && 
+        <span className="bookx-card-tag">Language: {book.language_name}</span>
+      }
+      {book.book_type_title && book.book_type_title !== 'N/A' && 
+        <span className="bookx-card-tag">{book.book_type_title}</span>
+      }
+      {book.version_label && book.version_label !== 'N/A' && 
+        <span className="bookx-card-tag">{book.version_label}</span>
+      }
+      {book.country_name && book.country_name !== 'N/A' && 
+        <span className="bookx-card-tag">{book.country_name}</span>
+      }
+       {book.isbn_code && book.isbn_code !== 'N/A' && 
+        <span className="bookx-card-tag">ISBN: {book.isbn_code}</span>
+      }
+    </div>
+  </div>
+</div>
             ))
           )}
         </div>
@@ -179,32 +233,39 @@ const Books = () => {
         <div className="bookx-details-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
           <div className="bookx-details-container">
             <button className="bookx-close-button" onClick={() => setSelectedBook(null)} aria-label="Close details">×</button>
-           
             <div className="bookx-details-image-wrapper">
               <PDFCoverPreview pdfUrl={`/api/books/${selectedBook.book_id}/stream-cover`} width={300} height={360} />
-              <p className="bookx-file-size">
+              {/* <p className="bookx-file-size">
                 File Size: {formatFileSize(selectedBook.file_size)}
-              </p>
+              </p> */}
             </div>
- 
             <div className="bookx-details-content">
               <h2 className="bookx-details-title">{selectedBook.title}</h2>
               <p className="bookx-details-description">{selectedBook.description || 'No description available.'}</p>
-             
               <div className="bookx-details-meta-grid">
                 <div><strong>Subject</strong><span>{getName(subjects, selectedBook.subject_id, 'subject_id')}</span></div>
                 <div><strong>Grade</strong><span>{getGradeName(selectedBook.grade_id)}</span></div>
                 <div><strong>Language</strong><span>{getName(languages, selectedBook.language_id, 'language_id')}</span></div>
                 <div><strong>Type</strong><span>{selectedBook.book_type_title || 'N/A'}</span></div>
                 <div><strong>Country</strong><span>{selectedBook.country_name || 'N/A'}</span></div>
-                <div><strong>ISBN</strong><span>{selectedBook.isbn_number || 'N/A'}</span></div>
+                <div><strong>ISBN</strong><span>{selectedBook.isbn_code || 'N/A'}</span></div>
               </div>
- 
               <div className="bookx-details-buttons">
                 <button className="btn btn-secondary" onClick={() => setSelectedBook(null)}>Back</button>
-                {/* --- RESTORED: 'View Cover' button --- */}
-                <button className="btn btn-secondary">View Cover</button>
-                <button className="btn btn-primary" onClick={() => { navigate(`/books/${selectedBook.book_id}/flipbook`); }}>
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => window.open(`/api/books/${selectedBook.book_id}/stream-cover`, '_blank')}
+                >
+                  View Cover
+                </button>
+                {/* --- UPDATED: Button to open the FlipbookViewer modal --- */}
+                <button 
+                  className="btn btn-primary" 
+                  onClick={() => {
+                    setFlipbookBookId(selectedBook.book_id);
+                    setSelectedBook(null); // Close the details overlay
+                  }}
+                >
                   View Book
                 </button>
               </div>
@@ -212,8 +273,16 @@ const Books = () => {
           </div>
         </div>
       )}
+
+      {/* --- NEW: Conditionally render the FlipbookViewer modal --- */}
+      {flipbookBookId && (
+        <FlipbookViewer
+          bookId={flipbookBookId}
+          onClose={() => setFlipbookBookId(null)}
+        />
+      )}
     </div>
   );
 };
- 
+
 export default Books;

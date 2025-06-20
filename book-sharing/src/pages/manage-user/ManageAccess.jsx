@@ -107,7 +107,6 @@ const UnassignedBooksList = ({
     languages,
     standards,
     bookTypes,
-    versions,
     countries
   } = metadata;
 
@@ -127,7 +126,6 @@ const UnassignedBooksList = ({
     languages: true,
     standards: true,
     bookTypes: true,
-    versions: true,
     countries: true
   });
 
@@ -140,7 +138,6 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
       const matchLanguage = filters.languages.size === 0 || filters.languages.has(book.language_id);
       const matchStandard = filters.standards.size === 0 || filters.standards.has(book.standard_id);
       const matchBookType = filters.bookTypes.size === 0 || (book.booktype_id && filters.bookTypes.has(book.booktype_id));
-      const matchVersion = filters.versions.size === 0 || (book.version_id && filters.versions.has(book.version_id));
       const matchCountry = filters.countries.size === 0 || (book.country_id && filters.countries.has(book.country_id));
       return (
         matchGrade &&
@@ -148,7 +145,6 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
         matchLanguage &&
         matchStandard &&
         matchBookType &&
-        matchVersion &&
         matchCountry
       );
     })
@@ -314,7 +310,6 @@ const ManageAccess = () => {
     languages: new Set(),
     standards: new Set(),
     bookTypes: new Set(),
-    versions: new Set(),
     countries: new Set()
   });
 
@@ -325,7 +320,6 @@ const ManageAccess = () => {
     languages: [],
     standards: [],
     bookTypes: [],
-    versions: [],
     countries: []
   });
 
@@ -378,7 +372,6 @@ const initialEdits = {};
           languagesRes,
           standardsRes,
           bookTypesRes,
-          versionsRes,
           countriesRes
         ] = await Promise.all([
           axios.get('/api/grades', authHeaders),
@@ -386,7 +379,6 @@ const initialEdits = {};
           axios.get('/api/languages', authHeaders),
           axios.get('/api/standards', authHeaders),
           axios.get('/api/booktypes', authHeaders),
-          axios.get('/api/versions', authHeaders).catch(() => ({ data: [] })),
           axios.get('/api/countries', authHeaders).catch(() => ({ data: [] }))
         ]);
 
@@ -396,7 +388,6 @@ const initialEdits = {};
           languages: languagesRes.data || [],
           standards: standardsRes.data || [],
           bookTypes: bookTypesRes.data || [],
-          versions: versionsRes.data || [],
           countries: countriesRes.data || []
         });
       } catch (error) {

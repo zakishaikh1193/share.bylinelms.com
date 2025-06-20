@@ -30,6 +30,7 @@
   align-items: center;
   transition: transform 0.3s ease;
   transform-origin: center center;
+  
 }
 
 .modal-close-button {
@@ -70,6 +71,7 @@
 }
 .page {
   background-color: #fff;
+  border: 0.5px dotted rgba(0, 0, 0, 0.05);
 }
 .page-image {
   width: 100%;

@@ -21,6 +21,7 @@ const standardRoutes = require('./routes/standardRoutes');
 const booksRoutes = require('./routes/booksRoutes'); 
 const bookTypeRoutes = require('./routes/bookTypeRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const logRoutes = require('./routes/logRoutes');
 const path = require('path');
 
 
@@ -38,5 +39,6 @@ app.use('/api/subjects', subjectRoutes);
 app.use('/api/books', booksRoutes);
 app.use('/api/booktypes', bookTypeRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/admin/activity-logs', logRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
