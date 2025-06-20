@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/AdminDashboard.css";
 import logo from "../../assests/images/logo.jpg";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { FaChevronDown, FaChevronUp, FaUserCircle } from "react-icons/fa";
 import { Link, useNavigate, Outlet, useLocation } from "react-router-dom";
 import booksImage from "../../assests/images/books.jpg";
 import books1Image from "../../assests/images/books1.jpg";
@@ -145,10 +145,11 @@ function Dashboard() {
  
             {showDropdown && (
               <div className="user-dropdown">
-                <div className="dropdown-avatar-icon">👤</div>
-                <div className="dropdown-info">
-                  <strong>{user?.name || "Admin"}</strong>
-                  <p>{user?.email || "admin@example.com"}</p>
+                <div className="dropdown-profile">
+                  <div className="dropdown-info">
+                    <strong>{user?.name || "Admin"}</strong>
+                    <p>{user?.email || "admin@example.com"}</p>
+                  </div>
                 </div>
                 <button className="logout-btn" onClick={handleLogout}>Logout</button>
               </div>
@@ -163,7 +164,7 @@ function Dashboard() {
                 <div className="dashboard-flex">
                   <img src={books1Image} alt="Books Collection" className="book-img" />
                   <div className="dashboard-text">
-                    <div className="dashboard-bg"><h1>Explore Books</h1></div>
+                    <div className="dashboard-bg"><h1 className="text-white">Explore Books</h1></div>
                     
                     <p>
                       Every page you open is a door to something new, a chance to grow, connect, and inspire. From local insights to global knowledge, these are treasures not hidden — but uploaded, waiting for you. Go beyond textbooks and step into a world where your next breakthrough is just one click away.
@@ -176,7 +177,7 @@ function Dashboard() {
                 <div className="dashboard-flex">
                  
                   <div className="dashboard-text">
-                    <div className="dashboard-bg"><h1>Books</h1></div>
+                    <div className="dashboard-bg"><h1 className="text-white">Books</h1></div>
                     
                     <p>"Dive into your comprehensive book repository to organize, update, and oversee your educational materials across countries, grades, and subjects."   </p>
                     <Link to="/admin/books" className="dashboard-button">Books</Link>

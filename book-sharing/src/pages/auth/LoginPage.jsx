@@ -4,9 +4,11 @@ import axios from '../../axiosConfig';
 import '../../styles/explorePageCss/LoginPage.css';
 import logo from '../../../src/assests/images/logo.jpg';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { useAuth } from '../../context/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -17,12 +19,13 @@ const LoginPage = () => {
 
     try {
       const response = await axios.post('/api/login', { email, password });
-      const { token, role } = response.data;
+      const { token, user } = response.data;
 
       localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
+      localStorage.setItem('role', user.role);
+      login(user);
 
-      if (role === 'admin') {
+      if (user.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/user/dashboard');

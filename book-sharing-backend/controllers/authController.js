@@ -31,7 +31,15 @@ exports.login = async (req, res) => {
     logActivity(user.user_id, 'USER_LOGIN', { email: user.email, role: user.role }, ip);
     // ---------------------
  
-    res.json({ token, role: user.role });
+    res.json({
+      token,
+      user: {
+        user_id: user.user_id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Server error' });

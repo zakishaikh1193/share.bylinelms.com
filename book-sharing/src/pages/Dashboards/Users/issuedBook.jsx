@@ -397,8 +397,8 @@ function BooksList({ books, onReadMore, filterOptions }) {
   <div className="book-card-issued-image-wrapper">
     <PDFCoverPreview 
       pdfUrl={`/api/books/${book.book_id}/stream-cover`} 
-      width={300} 
-      height={420} // Adjusted for a taller book look
+      width={390} 
+      height={500} // Adjusted for a taller book look
     />
   </div>
   <div className="book-card-issued-content">

@@ -37,7 +37,7 @@ function UserDashboard() {
 
       fetchUserDetails();
     }
-  }, [user, userDetails]);
+  }, [user]);
  
   const toggleMenu = (index) => {
     setOpenMenus((prev) => ({

@@ -205,6 +205,7 @@
   padding: 8px 12px;
   border-radius: 8px;
   transition: background 0.2s ease;
+  flex-direction: row !important; /* Ensure flex direction is row */
 }
  
 .user-info:hover {
@@ -234,6 +235,7 @@
   font-size: 1rem;
   color: #1e293b;
 }
+ 
  
 /* 📋 User Dropdown */
 .user-dropdown {
@@ -941,7 +943,7 @@
   top: 100%;
   right: 0;
   margin-top: 10px; /* Space between user info and dropdown */
-  width: 300px;
+  width: 260px; /* Adjusted from 300px */
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
