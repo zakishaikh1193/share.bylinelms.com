@@ -2,7 +2,7 @@ const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
- 
+const { logActivity } = require('../utils/logger');
  
 exports.login = async (req, res) => {
   try {
@@ -24,6 +24,12 @@ exports.login = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
+
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    // --- LOG ACTIVITY ---
+    logActivity(user.user_id, 'USER_LOGIN', { email: user.email, role: user.role }, ip);
+    // ---------------------
  
     res.json({ token, role: user.role });
   } catch (err) {
@@ -50,6 +56,11 @@ exports.registerUser = async (req, res) => {
     const [result] = await db.query(query, [
       name, email, hashedPassword, country_id, role, status, organization, designation
     ]);
+
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    // After successful insert
+logActivity(result.insertId, 'USER_REGISTER', { email, role, name }, ip);
  
     res.status(201).json({ message: 'User registered successfully', user_id: result.insertId });
   } catch (err) {
@@ -175,6 +186,12 @@ exports.updateUser = async (req, res) => {
     params.push(id);
 
     await db.query(query, params);
+
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    // After successful update
+logActivity(id, 'USER_UPDATE', { updatedFields: { name, email, role, status } }, ip);
+
 
     res.json({ message: 'User updated successfully' });
   } catch (err) {

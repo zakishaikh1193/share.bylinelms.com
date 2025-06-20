@@ -63,8 +63,10 @@ streamBookVersion: async (req, res) => {
       return res.status(404).json({ error: "File not found" });
     }
 
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
     // --- LOG ACTIVITY ---
-      logActivity(user_id, 'READ_BOOK', { bookId: parseInt(bookId), bookTitle: version.book_title });
+      logActivity(user_id, 'READ_BOOK', { bookId: parseInt(bookId), bookTitle: version.book_title }, ip);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline");
@@ -298,9 +300,11 @@ getBooks: async (req, res) => {
       [user_id, book_id]
     );
 
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
      // --- LOG ACTIVITY ---
       const [[book]] = await pool.query('SELECT title FROM books WHERE book_id = ?', [book_id]);
-      logActivity(user_id, 'REQUEST_ACCESS', { bookId: book_id, bookTitle: book?.title || 'N/A' });
+      logActivity(user_id, 'REQUEST_ACCESS', { bookId: book_id, bookTitle: book?.title || 'N/A' }, ip);
 
       res.json({ success: true });
     } catch (err) {
@@ -505,8 +509,9 @@ downloadBookZip: async (req, res) => {
       return res.status(404).json({ error: 'ZIP file missing on server' });
     }
 
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     // --- LOG ACTIVITY ---
-      logActivity(user_id, 'DOWNLOAD_ZIP', { bookId: parseInt(bookId), bookTitle: version.book_title, versionLabel });
+      logActivity(user_id, 'DOWNLOAD_ZIP', { bookId: parseInt(bookId), bookTitle: version.book_title, versionLabel }, ip);
 
     res.setHeader("Content-Type", "application/zip");
     res.setHeader(
@@ -585,8 +590,9 @@ downloadBookVersion: async (req, res) => {
       return res.status(404).json({ error: "File not found" });
     }
 
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     // --- LOG ACTIVITY ---
-      logActivity(user_id, 'DOWNLOAD_PDF', { bookId: parseInt(bookId), bookTitle: version.book_title, versionLabel });
+      logActivity(user_id, 'DOWNLOAD_PDF', { bookId: parseInt(bookId), bookTitle: version.book_title, versionLabel }, ip);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${path.basename(filePath)}"`);
@@ -672,8 +678,9 @@ downloadCover: async (req, res) => {
     }
 
     // --- LOG ACTIVITY ---
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
       const [[book]] = await pool.query('SELECT title FROM books WHERE book_id = ?', [bookId]);
-      logActivity(user_id, 'DOWNLOAD_COVER', { bookId: parseInt(bookId), bookTitle: book?.title || 'N/A' });
+      logActivity(user_id, 'DOWNLOAD_COVER', { bookId: parseInt(bookId), bookTitle: book?.title || 'N/A' }, ip);
 
     // Step 3: Send the cover file
     res.setHeader("Content-Type", "application/pdf");

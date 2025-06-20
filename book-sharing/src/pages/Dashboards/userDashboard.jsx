@@ -10,7 +10,6 @@ import axios from "../../axiosConfig";
  
 function UserDashboard() {
   const { user, logout } = useAuth();
-  console.log("User object from useAuth:", user);
   const navigate = useNavigate();
   const location = useLocation();
  
@@ -21,25 +20,24 @@ function UserDashboard() {
   const dropdownRef = useRef(null);
   const isDashboardHome = location.pathname === "/user/dashboard";
 
-useEffect(() => {
-  if (user?.user_id) {
-    const fetchUserDetails = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get(`/api/user/${user.user_id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUserDetails(res.data);
-        console.log("User details fetched:", res.data); // This should now appear
-      } catch (error) {
-        // Now you will likely see this error log
-        console.error("Failed to fetch user details:", error.response || error);
-      }
-    };
+  useEffect(() => {
+    // This effect runs whenever the user ID becomes available.
+    if (user?.user_id) {
+      const fetchUserDetails = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const res = await axios.get(`/api/user/${user.user_id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setUserDetails(res.data);
+        } catch (error) {
+          console.error("Failed to fetch user details:", error);
+        }
+      };
 
-    fetchUserDetails();
-  }
-}, [user?.user_id]);
+      fetchUserDetails();
+    }
+  }, [user, userDetails]);
  
   const toggleMenu = (index) => {
     setOpenMenus((prev) => ({

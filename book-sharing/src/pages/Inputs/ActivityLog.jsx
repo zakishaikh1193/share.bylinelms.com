@@ -6,34 +6,46 @@ import '../../styles/inputs-Css/ActivityLog.css'; // Your existing CSS file
 const formatLogDetails = (action, detailsString) => {
   let details;
   try {
-    // The 'details' from the DB is a string, so we need to parse it into an object
     details = JSON.parse(detailsString);
   } catch (e) {
-    // If parsing fails, return the raw string
     return detailsString || 'No additional details.';
   }
 
-  // Use a switch statement to handle different actions cleanly
+  const ip = details.ipAddress || 'Unknown';
+
   switch (action) {
     case 'USER_LOGIN':
-      return `User logged in from IP: ${details.ipAddress || 'Unknown'}`;
+      return `User logged in from IP: ${ip}`;
+
+    case 'USER_REGISTER':
+      return `Registered new account: "${details.name}" (${details.email}) with role "${details.role}" from IP: ${ip}`;
+
+    case 'USER_UPDATE':
+      return `Updated user: ${JSON.stringify(details.updatedFields || {}, null, 0)} from IP: ${ip}`;
+
     case 'READ_BOOK':
-      return `Viewed book: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId})`;
+      return `Viewed book: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId}) from IP: ${ip}`;
+
     case 'DOWNLOAD_PDF':
-      return `Downloaded PDF for: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId}, Version: ${details.versionLabel})`;
+      return `Downloaded PDF: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId}, Version: ${details.versionLabel}) from IP: ${ip}`;
+
     case 'DOWNLOAD_ZIP':
-      return `Downloaded ZIP for: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId}, Version: ${details.versionLabel})`;
+      return `Downloaded ZIP: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId}, Version: ${details.versionLabel}) from IP: ${ip}`;
+
     case 'DOWNLOAD_COVER':
-      return `Downloaded cover for: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId})`;
+      return `Downloaded cover for: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId}) from IP: ${ip}`;
+
     case 'REQUEST_ACCESS':
-      return `Requested access for book: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId})`;
+      return `Requested access to book: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId}) from IP: ${ip}`;
+
     case 'SUBMIT_REVIEW':
-      return `Submitted a review for book: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId}) with subject: "${details.reviewSubject}"`;
+      return `Submitted review for: "${details.bookTitle || 'N/A'}" (ID: ${details.bookId}) - Subject: "${details.reviewSubject}" from IP: ${ip}`;
+
     default:
-      // A fallback for any other actions
-      return JSON.stringify(details, null, 2);
+      return `Performed action: ${action} with details: ${JSON.stringify(details, null, 2)} from IP: ${ip}`;
   }
 };
+
 
 function ActivityLog() {
   const [logs, setLogs] = useState([]);

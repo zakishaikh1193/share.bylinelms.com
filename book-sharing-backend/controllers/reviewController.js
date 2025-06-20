@@ -14,10 +14,10 @@ createReview: async (req, res) => {
         `INSERT INTO book_user_reviews (book_id, user_id, subject, description, file_path) VALUES (?, ?, ?, ?, ?)`,
         [book_id, user_id, subject, description, file_path]
       );
-      
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
       // --- LOG ACTIVITY ---
       const [[book]] = await pool.query('SELECT title FROM books WHERE book_id = ?', [book_id]);
-      logActivity(user_id, 'SUBMIT_REVIEW', { bookId: book_id, bookTitle: book?.title || 'N/A', reviewSubject: subject });
+      logActivity(user_id, 'SUBMIT_REVIEW', { bookId: book_id, bookTitle: book?.title || 'N/A', reviewSubject: subject }, ip);
       // --------------------
 
       res.json({ review_id: result.insertId });

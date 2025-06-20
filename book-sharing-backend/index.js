@@ -8,7 +8,7 @@ const auth = require('./controllers/authController');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
-
+app.set('trust proxy', true);
 
 // Routes
 const adminRoutes = require('./routes/adminRoutes');

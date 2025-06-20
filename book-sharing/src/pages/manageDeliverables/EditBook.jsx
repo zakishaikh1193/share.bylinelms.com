@@ -222,7 +222,7 @@ export default function EditBookForm() {
       }, config);
 
       // 2. Update version if a new version file is provided
-      if (formData.version_file) {
+      if (formData.version_file || formData.zip_file) {
         const versionForm = new FormData();
         versionForm.append('book_id', bookId);
         versionForm.append('version_label', formData.version_label);
