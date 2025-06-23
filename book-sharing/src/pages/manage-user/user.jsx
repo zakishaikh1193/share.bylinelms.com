@@ -198,13 +198,13 @@ export default function User() {
                     <td>{user.organization}</td>
                     <td>{user.designation}</td>
                     <td className="action-buttons"> {/* ✅ Actions */}
-                      <button
+                      {/* <button
                         className="view-btn"
                         onClick={() => handleViewUser(user.user_id)}
                         title="View"
                       >
                         <FaEye />
-                      </button>
+                      </button> */}
                       <button
                         className="edit-btn"
                         onClick={() => navigate(`/admin/edit-user/${user.user_id}`)}
@@ -260,7 +260,7 @@ export default function User() {
           </div>
         )}
  
-        {viewedUser && (
+        {/* {viewedUser && (
           <div className="modal-overlay">
             <div className="modal-content">
               <div className="modal-header">
@@ -348,7 +348,7 @@ export default function User() {
               )}
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

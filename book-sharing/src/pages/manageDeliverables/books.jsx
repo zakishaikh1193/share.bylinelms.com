@@ -127,7 +127,6 @@ const BooksTable = () => {
             <th>Subject</th>
             <th>Standards</th>
             <th>Format</th>
-            <th>Tags</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -149,7 +148,6 @@ const BooksTable = () => {
                 <td>{getSubjectName(book.subject_id)}</td>
                 <td>{getStandardName(book.standard_id)}</td>
                 <td>{book.format_name || "—"}</td>
-                <td>{book.tags?.map(t => t.tag_name).join(', ') || "—"}</td>
                  <td>
                   <div className="action-buttons">
                     <button

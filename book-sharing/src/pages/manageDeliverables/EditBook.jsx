@@ -458,7 +458,7 @@ export default function EditBookForm() {
         </label>
 
         <label>
-          Upload New Cover PDF:
+          Upload New Cover PDF (optional):
           <input type="file" name="cover_file" accept="application/pdf" onChange={handleChange}/>
         </label>
 

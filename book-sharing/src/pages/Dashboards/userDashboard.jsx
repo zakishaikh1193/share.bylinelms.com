@@ -3,25 +3,32 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate, Link, Outlet, useLocation } from "react-router-dom";
 import "../../styles/userDashboard.css";
 import logo from "../../assests/images/logo.jpg";
-import { FaUserCircle } from "react-icons/fa";
-import img1 from "../../assests/images/img1.jpg";
-import img2 from "../../assests/images/img2.jpg";
+import img1 from "../../assests/images/img1.png";
+import { FaUserCircle, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import axios from "../../axiosConfig";
  
 function UserDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
- 
   const [openMenus, setOpenMenus] = useState({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const dropdownRef = useRef(null);
   const isDashboardHome = location.pathname === "/user/dashboard";
-
+ 
+  const [issuedBooks, setIssuedBooks] = useState([]);
+  const [combinedStats, setCombinedStats] = useState({});
+ 
   useEffect(() => {
-    // This effect runs whenever the user ID becomes available.
+    const savedState = localStorage.getItem("sidebarCollapsedUser");
+    if (savedState !== null) {
+      setSidebarCollapsed(savedState === "true");
+    }
+  }, []);
+ 
+  useEffect(() => {
     if (user?.user_id) {
       const fetchUserDetails = async () => {
         try {
@@ -34,10 +41,45 @@ function UserDashboard() {
           console.error("Failed to fetch user details:", error);
         }
       };
-
       fetchUserDetails();
     }
-  }, [user]);
+  }, [user?.user_id]);
+ 
+  useEffect(() => {
+    const fetchIssuedBooks = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        console.log("User ID:", user?.user_id);
+ 
+        const res = await axios.get(`/api/user/${user.user_id}/issued-books`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+ 
+        console.log("Issued Books Response:", res.data);
+        const books = Array.isArray(res.data) ? res.data : [];
+        setIssuedBooks(books);
+ 
+        const combined = {};
+        books.forEach((book) => {
+          const subject = book.subject || "Unknown Subject";
+          const grade = book.grade || "Unknown Grade";
+          const key = `${subject} (Grade ${grade})`;
+          combined[key] = (combined[key] || 0) + 1;
+        });
+ 
+        console.log("Combined Stats:", combined);
+        setCombinedStats(combined);
+      } catch (err) {
+        console.error("Failed to fetch issued books:", err);
+      }
+    };
+ 
+    if (user?.user_id) {
+      fetchIssuedBooks();
+    } else {
+      console.warn("User ID not available yet.");
+    }
+  }, [user?.user_id]);
  
   const toggleMenu = (index) => {
     setOpenMenus((prev) => ({
@@ -47,7 +89,11 @@ function UserDashboard() {
   };
  
   const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
+    setSidebarCollapsed((prev) => {
+      const newState = !prev;
+      localStorage.setItem("sidebarCollapsedUser", newState);
+      return newState;
+    });
   };
  
   const toggleUserDropdown = () => {
@@ -61,71 +107,49 @@ function UserDashboard() {
  
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setUserDropdownOpen(false);
       }
     };
- 
-    if (userDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
-    }
- 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [userDropdownOpen]);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
  
   const menuItems = [
     {
       name: "My Books",
-      subItems: [
-        { name: "Issued Books", link: "/user/dashboard/issued-books" },
-      ],
+      subItems: [{ name: "Issued Books", link: "/user/dashboard/issued-books" }],
     },
     {
       name: "Client Input",
-      subItems: [
-        { name: "Books upload", link: "/user/dashboard/upload-book" },
-      ],
+      subItems: [{ name: "Books Upload", link: "/user/dashboard/upload-book" }],
     },
-    // {
-    //   name: "Support",
-    //   subItems: [
-    //     { name: "Contact Us", link: "/user/dashboard/contact-us" },
-    //     { name: "FAQ", link: "/user/dashboard/faq" },
-    //   ],
-    // },
   ];
  
   return (
     <div className={`dashboard-container ${sidebarCollapsed ? "collapsed" : ""}`}>
-      <button className="floating-toggle-btn" onClick={toggleSidebar}>
-        ☰
-      </button>
+      {sidebarCollapsed && (
+        <button className="floating-toggle-btn" onClick={toggleSidebar}>☰</button>
+      )}
  
       <aside className="sidebar">
         <div className="sidebar-header">
           <Link to="/user/dashboard">
             <img src={logo} alt="Logo" className="sidebar-logo" />
           </Link>
-          <button className="toggle-btn" onClick={toggleSidebar}>
-            ☰
-          </button>
+          {!sidebarCollapsed && (
+            <button className="toggle-btn" onClick={toggleSidebar}>×</button>
+          )}
         </div>
+ 
         <ul className="nav-links">
           {menuItems.map((item, index) => (
             <li className="nav-item" key={index}>
-              <div
-                className="nav-link-with-toggle"
-                onClick={() => toggleMenu(index)}
-              >
-                {item.name}
-                <span>{openMenus[index] ? "▲" : "▼"}</span>
+              {index !== 0 && <hr style={{ border: "0.5px solid #ccc", margin: "10px 0" }} />}
+              <div className="nav-link-with-toggle" onClick={() => toggleMenu(index)}>
+                <span>{item.name}</span>
+                {item.subItems.length > 0 &&
+                  (openMenus[index] ? <FaChevronUp size={14} /> : <FaChevronDown size={14} />)}
               </div>
               {openMenus[index] && (
                 <ul className="sub-menu">
@@ -141,104 +165,67 @@ function UserDashboard() {
         </ul>
       </aside>
  
-<main className="main-content">
-        <header className="top-navbar">
-          <div
-            className="user-info"
-            onClick={toggleUserDropdown}
-            ref={dropdownRef}
-          >
-            {/* The initial display is fine, so no changes here */}
-            <span className="user-avatar">
-              {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-            </span>
-            <span className="username">{user?.name || "User"}</span>
+      <main className="main-content">
+        <div className="background">
+          <header className="top-navbar">
+            <div
+              className={`user-info ${userDropdownOpen ? "active" : ""}`}
+              onClick={toggleUserDropdown}
+              ref={dropdownRef}
+            >
+              <span className="user-avatar">
+                {user?.name?.charAt(0).toUpperCase() || "U"}
+              </span>
+              <span className="username">{user?.name || "User"}</span>
  
-     {userDropdownOpen && (
-              <div className="user-dropdown-menu">
-                <div className="dropdown-profile">
-                  <FaUserCircle size={48} color="#4A5568" />
-                  <div className="dropdown-user-details">
-                    <div className="dropdown-name">
-                      {userDetails?.name || user?.name || "User"}
-                    </div>
-                    <div className="dropdown-email">
-                      {userDetails?.email || "user@example.com"}
-                    </div>
+              {userDropdownOpen && (
+                <div className="user-dropdown">
+                  <div className="dropdown-avatar-icon">
+                    <FaUserCircle size={48} />
                   </div>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="logout-button"
-                >
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        </header>
- 
-        <section className="content-wrapper">
-          {isDashboardHome ? (
-            <div className="user-dashboard-home">
-              {/* Issued Books Section */}
-              <section className="dashboard-section section-light improved-user-layout">
- 
-                <div className="text-block align-text">
-                  <h2>Track Your Books Easily</h2>
-                  <p>
-                    Stay on top of your reading and responsibilities with a smart book tracking system built just for you.
-                    Know exactly which books you've borrowed, when they're due, and get timely updates so you never miss a return.
-                    Need more time? Request renewals in just a click — no queues, no paperwork.
- 
-                  </p>
-                  <div className="button-wrapper">
-                    <button
-                      onClick={() => navigate("/user/dashboard/issued-books")}
-                      className="dashboard-button rounded-btn"
-                    >
-                      View Issued Books
-                    </button>
+                  <div className="dropdown-info">
+                    <strong>{userDetails?.name || user?.name || "User"}</strong>
+                    <p>{userDetails?.email || "user@example.com"}</p>
                   </div>
- 
+                  <button className="logout-btn" onClick={handleLogout}>Logout</button>
                 </div>
-                <div className="image-block logo-block">
-                  <img src={img1} alt="Issued Books" className="logo-image larger-img" />
-                </div>
-              </section>
- 
-              {/* Upload Book Section */}
-              <section className="dashboard-section section-light improved-user-layout">
-                <div className="image-block logo-block">
-                  <img src={img2} alt="Upload Books" className="logo-image larger-img" />
-                </div>
-                <div className="text-block align-text">
-                  <h2>Upload Book</h2>
-                  <p>
-                    Give Your Inputs on Your Issued Books if any changes are required.
-                  </p>
-                  <div className="button-wrapper">
-                    <button
-                      onClick={() => navigate("/user/dashboard/upload-book")}
-                      className="dashboard-button rounded-btn"
-                    >
-                      Upload Book
-                    </button>
-                  </div>
-                </div>
-              </section>
+              )}
             </div>
+          </header>
  
-          ) : (
-            <Outlet />
-          )}
- 
- 
-        </section>
+          <section className="wrapper">
+            {isDashboardHome ? (
+              <>
+                <div className="dashboard-row">
+                  <div className="dashboard-box">
+                    <div className="dashboard-flex">
+                      <div className="dashboard-text">
+                        <div className="dashboard-bg">
+                          <h1>Your Books</h1>
+                        </div>
+                        <p>
+                          Stay organized with your issued books, track due dates, and upload any feedback.
+                          Empower your reading journey with one simple dashboard.
+                        </p>
+                        <div className="button-container">
+                          <Link to="/user/dashboard/issued-books" className="dashboard-button">
+                            View Issued Books
+                          </Link>
+                        </div>
+                      </div>
+                      <img src={img1} alt="Issued Books" className="book-img" />
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <Outlet />
+            )}
+          </section>
+        </div>
       </main>
     </div>
   );
 }
  
 export default UserDashboard;
- 

@@ -19,7 +19,9 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.0",
     "mysql2": "^3.14.1",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "pdf-lib": "^1.17.1",
+    "sharp": "^0.34.2"
   },
   "description": ""
 }

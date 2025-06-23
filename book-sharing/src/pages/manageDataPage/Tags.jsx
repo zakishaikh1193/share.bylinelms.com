@@ -8,6 +8,7 @@ export default function Tags() {
   const [newTag, setNewTag] = useState('');
   const [editId, setEditId] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const [showAddInput, setShowAddInput] = useState(false);
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
@@ -29,6 +30,7 @@ export default function Tags() {
     axios.post('/api/tags', { tag_name: newTag }, { headers })
       .then(() => {
         setNewTag('');
+        setShowAddInput(false);
         fetchTags();
       });
   };
@@ -58,8 +60,24 @@ export default function Tags() {
     <div className="data-section">
       <div className="data-header">
         <h2>Tags</h2>
-        <button className="add-btn">+ Add</button>
+        {!showAddInput && (
+          <button className="add-btn" onClick={() => setShowAddInput(true)}>+ Add</button>
+        )}
       </div>
+
+      {showAddInput && (
+        <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <input
+            className="edit-input"
+            value={newTag}
+            onChange={e => setNewTag(e.target.value)}
+            placeholder="Enter new tag name"
+            autoFocus
+          />
+          <button type="submit" className="action-btn"><FaSave /></button>
+          <button type="button" className="action-btn" onClick={() => { setShowAddInput(false); setNewTag(''); }}>Cancel</button>
+        </form>
+      )}
 
       <table className="data-table">
         <thead>

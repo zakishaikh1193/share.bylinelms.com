@@ -8,6 +8,7 @@ export default function BookFormats() {
   const [newFormat, setNewFormat] = useState('');
   const [editId, setEditId] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const [showAddInput, setShowAddInput] = useState(false);
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
@@ -29,6 +30,7 @@ export default function BookFormats() {
     axios.post('/api/book-formats', { format_name: newFormat }, { headers })
       .then(() => {
         setNewFormat('');
+        setShowAddInput(false);
         fetchFormats();
       });
   };
@@ -58,9 +60,24 @@ export default function BookFormats() {
     <div className="data-section">
       <div className="data-header">
         <h2>Book Formats</h2>
-        {/* You can make this button open a modal for adding a new format */}
-        <button className="add-btn">+ Add</button>
+        {!showAddInput && (
+          <button className="add-btn" onClick={() => setShowAddInput(true)}>+ Add</button>
+        )}
       </div>
+      
+      {showAddInput && (
+        <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <input
+            className="edit-input"
+            value={newFormat}
+            onChange={e => setNewFormat(e.target.value)}
+            placeholder="Enter new format name"
+            autoFocus
+          />
+          <button type="submit" className="action-btn"><FaSave /></button>
+          <button type="button" className="action-btn" onClick={() => { setShowAddInput(false); setNewFormat(''); }}>Cancel</button>
+        </form>
+      )}
       
       <table className="data-table">
         <thead>

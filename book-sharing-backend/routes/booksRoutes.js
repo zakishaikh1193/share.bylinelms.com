@@ -66,7 +66,8 @@ router.post('/ministry-reviews', authenticateAdmin, bookController.submitForMini
 router.get('/ministry-reviews', authenticateAdmin, bookController.getMinistryReviews);
 router.patch('/ministry-reviews/:book_id', authenticateAdmin, bookController.updateMinistryReviewStatus);
 
-router.get("/:bookId/stream-cover", authenticateUserOrAdmin, bookController.streamCover);
+// COVER STREAMING - Updated to use optimized cover endpoint
+router.get("/:bookId/stream-cover", authenticateUserOrAdmin, bookController.streamOptimizedCover);
 router.get("/:bookId/stream-version", authenticateUserOrAdmin, bookController.streamBookVersion);
 router.get('/:bookId/download/:versionLabel', authenticateUserOrAdmin, bookController.downloadBookVersion);
 router.get('/:bookId/file-size/:versionLabel', authenticateUserOrAdmin, bookController.getBookFileSize);

@@ -284,17 +284,19 @@ export default function AddBookForm() {
         }
       });
 
-      // 3. Upload cover
-      const coverForm = new FormData();
-      coverForm.append('book_id', book_id);
-      coverForm.append('file', formData.cover_file);
-      await axios.post('/api/books/covers', coverForm, {
-        headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (e) => {
-          const percent = Math.round((e.loaded * 100) / e.total);
-          setUploadProgress(prev => ({ ...prev, cover: percent }));
-        }
-      });
+      // 3. Upload cover (optional)
+      if (formData.cover_file) {
+        const coverForm = new FormData();
+        coverForm.append('book_id', book_id);
+        coverForm.append('file', formData.cover_file);
+        await axios.post('/api/books/covers', coverForm, {
+          headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (e) => {
+            const percent = Math.round((e.loaded * 100) / e.total);
+            setUploadProgress(prev => ({ ...prev, cover: percent }));
+          }
+        });
+      }
 
       // 4. Upload resource (optional)
       if (formData.resource_file) {
@@ -465,8 +467,8 @@ export default function AddBookForm() {
         </label>
 
         <label>
-          Upload Cover PDF:
-          <input type="file" name="cover_file" accept="application/pdf" onChange={handleChange} required />
+          Upload Cover PDF (optional):
+          <input type="file" name="cover_file" accept="application/pdf" onChange={handleChange} />
         </label>
 
 <label className="full-width">
@@ -529,10 +531,12 @@ export default function AddBookForm() {
             Version Upload: {uploadProgress.version}%
             <progress value={uploadProgress.version} max="100" />
           </div>
-          <div>
-            Cover Upload: {uploadProgress.cover}%
-            <progress value={uploadProgress.cover} max="100" />
-          </div>
+          {formData.cover_file && (
+            <div>
+              Cover Upload: {uploadProgress.cover}%
+              <progress value={uploadProgress.cover} max="100" />
+            </div>
+          )}
           {formData.resource_file && (
             <div>
               Resource Upload: {uploadProgress.resource}%

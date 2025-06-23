@@ -8,10 +8,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 const PDFCoverPreview = ({ pdfUrl, width = 200, height = 260 }) => {
   const canvasRef = useRef(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const renderFirstPage = async () => {
       try {
+        setLoading(true);
+        setError(false);
+        
         const token = localStorage.getItem("token");
         const response = await axios.get(pdfUrl, {
           responseType: "arraybuffer",
@@ -40,6 +44,7 @@ const PDFCoverPreview = ({ pdfUrl, width = 200, height = 260 }) => {
         setLoading(false);
       } catch (err) {
         console.error("Failed to render PDF cover:", err);
+        setError(true);
         setLoading(false);
       }
     };
@@ -47,10 +52,45 @@ const PDFCoverPreview = ({ pdfUrl, width = 200, height = 260 }) => {
     renderFirstPage();
   }, [pdfUrl]);
 
+  if (error) {
+    return (
+      <div style={{ 
+        width, 
+        height, 
+        background: "#f0f0f0", 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "center",
+        border: "1px solid #ddd",
+        borderRadius: "4px"
+      }}>
+        <div style={{ textAlign: "center", color: "#666" }}>
+          <div style={{ fontSize: "24px", marginBottom: "8px" }}>📄</div>
+          <div style={{ fontSize: "12px" }}>Cover not available</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ width, height, position: "relative" }}>
       <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: loading ? "none" : "block" }} />
-      {loading && <div style={{ width: "100%", height: "100%", background: "#f0f0f0" }}>Loading cover...</div>}
+      {loading && (
+        <div style={{ 
+          width: "100%", 
+          height: "100%", 
+          background: "#f0f0f0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          border: "1px solid #ddd",
+          borderRadius: "4px"
+        }}>
+          <div style={{ textAlign: "center", color: "#666" }}>
+            <div style={{ fontSize: "12px" }}>Loading cover...</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

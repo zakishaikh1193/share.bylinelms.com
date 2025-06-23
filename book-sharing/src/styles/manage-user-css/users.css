@@ -310,18 +310,19 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 1000;
+  z-index: 100;
   width: 100%;
   max-width: 600px;
   padding: 20px;
+
 }
  
 .modal-content {
-  background: white;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   animation: slideIn 0.3s ease-out;
+
 }
  
 @keyframes slideIn {
@@ -589,13 +590,13 @@
 }
  
 .edit-user-container {
-  width: 85rem;
-  margin: 2rem auto;
+  width: 100%;
+  margin: auto;
   padding: 2rem;
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  height: 80%;
+  height: 100%;
 }
  
 .edit-user-header {
@@ -732,4 +733,7 @@
   .save-btn {
     width: 100%;
   }
+}
+.back-btn:hover{
+  cursor: pointer;
 }

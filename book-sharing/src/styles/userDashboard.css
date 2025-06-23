@@ -205,7 +205,7 @@
   padding: 8px 12px;
   border-radius: 8px;
   transition: background 0.2s ease;
-  flex-direction: row !important; /* Ensure flex direction is row */
+  flex-direction: row !important; /* Ensure horizontal layout */
 }
  
 .user-info:hover {
@@ -235,7 +235,6 @@
   font-size: 1rem;
   color: #1e293b;
 }
- 
  
 /* 📋 User Dropdown */
 .user-dropdown {
@@ -914,11 +913,11 @@
   border-radius: 8px;
   transition: background-color 0.2s;
 }
-
+ 
 .user-info:hover {
   background-color: #f1f5f9; /* Light grey on hover */
 }
-
+ 
 .user-avatar {
   width: 36px;
   height: 36px;
@@ -931,19 +930,19 @@
   border-radius: 50%;
   margin-right: 12px;
 }
-
+ 
 .username {
   font-weight: 500;
   color: #1e293b;
 }
-
+ 
 /* The Dropdown Menu Itself */
 .user-dropdown-menu {
   position: absolute;
   top: 100%;
   right: 0;
   margin-top: 10px; /* Space between user info and dropdown */
-  width: 260px; /* Adjusted from 300px */
+  width: 300px;
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
@@ -952,7 +951,7 @@
   z-index: 100;
   animation: slide-down 0.2s ease-out;
 }
-
+ 
 /* --- Dropdown Profile Section --- */
 .dropdown-profile {
   display: flex;
@@ -960,22 +959,22 @@
   padding: 20px;
   border-bottom: 1px solid #e2e8f0;
 }
-
+ 
 .dropdown-user-details {
   margin-left: 16px;
 }
-
+ 
 .dropdown-name {
   font-size: 1.1rem;
   font-weight: 600;
   color: #0f172a;
 }
-
+ 
 .dropdown-email {
   font-size: 0.875rem; /* 14px */
   color: #64748b; /* A softer, secondary color */
 }
-
+ 
 /* --- Logout Button --- */
 .logout-button {
   display: block;
@@ -990,12 +989,12 @@
   cursor: pointer;
   transition: background-color 0.2s;
 }
-
+ 
 .logout-button:hover {
   background-color: #fef2f2; /* A very light red on hover */
 }
-
-
+ 
+ 
 /* Optional: A simple animation for the dropdown */
 @keyframes slide-down {
   from {
@@ -1007,3 +1006,101 @@
     transform: translateY(0);
   }
 }
+.dashboard-button {
+  position: relative;
+  display: inline-block;
+  padding: 10px 20px;
+  margin-right: 10px;
+  color: black;
+  background-color: white;
+  border: 2px solid black;
+  text-decoration: none;
+  font-weight: bold;
+  overflow: hidden;
+  transition: color 0.4s ease;
+  z-index: 1;
+}
+ 
+.dashboard-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 100%;
+  background-color: #007bff; /* Bootstrap Blue or any you like */
+  z-index: -1;
+  transition: width 0.4s ease;
+}
+ 
+.dashboard-button:hover::before,
+.dashboard-button:focus::before {
+  width: 100%;
+}
+ 
+.dashboard-button:hover,
+.dashboard-button:focus {
+  color: white;
+  border-color: #007bff;
+}
+.dashboard-stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 20px;
+}
+ 
+.dashboard-stats-card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  width: 240px;
+}
+ 
+.dashboard-stats-card-icon {
+  font-size: 32px;
+  margin-right: 16px;
+}
+ 
+.issued-icon {
+  color: #2ecc71;
+}
+ 
+.subject-icon {
+  color: #3498db;
+}
+ 
+.grade-icon {
+  color: #f39c12;
+}
+ 
+.dashboard-stats-card-title {
+  font-size: 14px;
+  color: #777;
+}
+ 
+.dashboard-stats-card-count {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+}
+.dashboard-stats-grade-group {
+  margin-bottom: 20px;
+  padding: 10px;
+  border: 1px solid #ececec;
+  border-radius: 10px;
+  background-color: #f9f9f9;
+}
+ 
+.grade-group-header {
+  background-color: #eef2f7;
+}
+ 
+.nested-subject-card {
+  margin-left: 20px;
+  background-color: #ffffff;
+}
+ 
