@@ -10,57 +10,95 @@ const { PDFDocument } = require('pdf-lib');
 module.exports = {
 
   // New optimized cover endpoint that serves either cover or PDF first page
+  // streamOptimizedCover: async (req, res) => {
+  //   try {
+  //     const { bookId } = req.params;
+
+  //     // First, try to get an uploaded cover
+  //     const [[cover]] = await pool.query(
+  //       "SELECT uploaded_link FROM covers WHERE book_id = ? ORDER BY cover_id DESC LIMIT 1",
+  //       [bookId]
+  //     );
+
+  //     if (cover && fs.existsSync(cover.uploaded_link)) {
+  //       // Serve the uploaded cover
+  //       res.setHeader("Content-Type", "application/pdf");
+  //       fs.createReadStream(cover.uploaded_link).pipe(res);
+  //       return;
+  //     }
+
+  //     // If no cover, get the first page of the PDF as cover
+  //     const [[version]] = await pool.query(
+  //       `SELECT uploaded_link FROM book_versions WHERE book_id = ? ORDER BY version_id DESC LIMIT 1`,
+  //       [bookId]
+  //     );
+
+  //     if (!version || !fs.existsSync(version.uploaded_link)) {
+  //       return res.status(404).json({ error: "No cover or PDF found" });
+  //     }
+
+  //     // Extract first page from PDF and serve as cover
+  //     const pdfBytes = fs.readFileSync(version.uploaded_link);
+  //     const pdfDoc = await PDFDocument.load(pdfBytes);
+      
+  //     if (pdfDoc.getPageCount() === 0) {
+  //       return res.status(404).json({ error: "PDF has no pages" });
+  //     }
+
+  //     // Create a new PDF with only the first page
+  //     const coverDoc = await PDFDocument.create();
+  //     const [firstPage] = await coverDoc.copyPages(pdfDoc, [0]);
+  //     coverDoc.addPage(firstPage);
+
+  //     const coverBytes = await coverDoc.save();
+      
+  //     res.setHeader("Content-Type", "application/pdf");
+  //     res.setHeader("Content-Length", coverBytes.length);
+  //     res.send(Buffer.from(coverBytes));
+
+  //   } catch (err) {
+  //     console.error("Error streaming optimized cover:", err);
+  //     res.status(500).json({ error: err.message });
+  //   }
+  // },
+
   streamOptimizedCover: async (req, res) => {
-    try {
-      const { bookId } = req.params;
+  try {
+    const { bookId } = req.params;
 
-      // First, try to get an uploaded cover
-      const [[cover]] = await pool.query(
-        "SELECT uploaded_link FROM covers WHERE book_id = ? ORDER BY cover_id DESC LIMIT 1",
-        [bookId]
-      );
+    // Get the latest version of the book PDF
+    const [[version]] = await pool.query(
+      `SELECT uploaded_link FROM book_versions WHERE book_id = ? ORDER BY version_id DESC LIMIT 1`,
+      [bookId]
+    );
 
-      if (cover && fs.existsSync(cover.uploaded_link)) {
-        // Serve the uploaded cover
-        res.setHeader("Content-Type", "application/pdf");
-        fs.createReadStream(cover.uploaded_link).pipe(res);
-        return;
-      }
-
-      // If no cover, get the first page of the PDF as cover
-      const [[version]] = await pool.query(
-        `SELECT uploaded_link FROM book_versions WHERE book_id = ? ORDER BY version_id DESC LIMIT 1`,
-        [bookId]
-      );
-
-      if (!version || !fs.existsSync(version.uploaded_link)) {
-        return res.status(404).json({ error: "No cover or PDF found" });
-      }
-
-      // Extract first page from PDF and serve as cover
-      const pdfBytes = fs.readFileSync(version.uploaded_link);
-      const pdfDoc = await PDFDocument.load(pdfBytes);
-      
-      if (pdfDoc.getPageCount() === 0) {
-        return res.status(404).json({ error: "PDF has no pages" });
-      }
-
-      // Create a new PDF with only the first page
-      const coverDoc = await PDFDocument.create();
-      const [firstPage] = await coverDoc.copyPages(pdfDoc, [0]);
-      coverDoc.addPage(firstPage);
-
-      const coverBytes = await coverDoc.save();
-      
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Length", coverBytes.length);
-      res.send(Buffer.from(coverBytes));
-
-    } catch (err) {
-      console.error("Error streaming optimized cover:", err);
-      res.status(500).json({ error: err.message });
+    if (!version || !fs.existsSync(version.uploaded_link)) {
+      return res.status(404).json({ error: "No PDF found" });
     }
-  },
+
+    // Extract first page from PDF and serve as cover
+    const pdfBytes = fs.readFileSync(version.uploaded_link);
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+
+    if (pdfDoc.getPageCount() === 0) {
+      return res.status(404).json({ error: "PDF has no pages" });
+    }
+
+    // Create a new PDF with only the first page
+    const coverDoc = await PDFDocument.create();
+    const [firstPage] = await coverDoc.copyPages(pdfDoc, [0]);
+    coverDoc.addPage(firstPage);
+
+    const coverBytes = await coverDoc.save();
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Length", coverBytes.length);
+    res.send(Buffer.from(coverBytes));
+  } catch (err) {
+    console.error("Error streaming first page as cover:", err);
+    res.status(500).json({ error: err.message });
+  }
+},
 
   streamCover: async (req, res) => {
   try {

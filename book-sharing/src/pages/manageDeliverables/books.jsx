@@ -11,7 +11,9 @@ const BooksTable = () => {
   const [languages, setLanguages] = useState([]);
   const [standards, setStandards] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
@@ -19,6 +21,32 @@ const BooksTable = () => {
   const getSubjectName = id => subjects.find(s => s.subject_id === id)?.subject_name || '—';
   const getLanguageName = id => languages.find(l => l.language_id === id)?.language_name || '—';
   const getStandardName = id => standards.find(st => st.standard_id === id)?.standard_name || '—';
+
+  // Filter books based on search term
+  const filteredBooks = books.filter(book => {
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    if (!lowerCaseSearchTerm) return true; // If no search term, show all books
+
+    return (
+      (book.title || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+      (book.country_name || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+      (book.isbn_code || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+      (book.book_type_title || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+      getLanguageName(book.language_id).toLowerCase().includes(lowerCaseSearchTerm) ||
+      getGradeName(book.grade_id).toLowerCase().includes(lowerCaseSearchTerm) ||
+      getSubjectName(book.subject_id).toLowerCase().includes(lowerCaseSearchTerm) ||
+      getStandardName(book.standard_id).toLowerCase().includes(lowerCaseSearchTerm) ||
+      (book.tags?.some(tag => tag.tag_name.toLowerCase().includes(lowerCaseSearchTerm)))
+    );
+  });
+
+  // Calculate total pages based on filtered books
+  const totalPages = Math.ceil(filteredBooks.length / itemsPerPage);
+
+  // Get current items for the page
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredBooks.slice(indexOfFirstItem, indexOfLastItem);
 
   const fetchData = async () => {
     try {
@@ -46,22 +74,7 @@ const BooksTable = () => {
     }
   };
 
-   const filteredBooks = books.filter(book => {
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    if (!lowerCaseSearchTerm) return true; // If no search term, show all books
 
-    return (
-      (book.title || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-      (book.country_name || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-      (book.isbn_code || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-      (book.book_type_title || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-      getLanguageName(book.language_id).toLowerCase().includes(lowerCaseSearchTerm) ||
-      getGradeName(book.grade_id).toLowerCase().includes(lowerCaseSearchTerm) ||
-      getSubjectName(book.subject_id).toLowerCase().includes(lowerCaseSearchTerm) ||
-      getStandardName(book.standard_id).toLowerCase().includes(lowerCaseSearchTerm) ||
-      (book.tags?.some(tag => tag.tag_name.toLowerCase().includes(lowerCaseSearchTerm)))
-    );
-  });
 
   const handleDelete = async (bookId, e) => {
     e.stopPropagation();
@@ -114,16 +127,17 @@ const BooksTable = () => {
     onChange={(e) => setSearchTerm(e.target.value)}
   />
 </div>
-      <table className="books-table-structure">
+      <div className="books-table-container">
+        <table className="books-table-structure">
         <thead>
           <tr>
             <th>ID</th>
+            <th>Grade</th>
             <th>Title</th>
             <th>Country</th>
             <th>ISBN</th>
             <th>Book Type</th>
             <th>Language</th>
-            <th>Grade</th>
             <th>Subject</th>
             <th>Standards</th>
             <th>Format</th>
@@ -136,15 +150,15 @@ const BooksTable = () => {
               <td colSpan="10" className="books-table-no-data">{searchTerm ? `No books found matching "${searchTerm}"` : "No books available"}</td>
             </tr>
           ) : (
-            filteredBooks.map((book) => (
+            currentItems.map((book) => (
               <tr key={book.book_id} className="clickable-row">
                 <td>{book.book_id}</td>
+                <td>{getGradeName(book.grade_id)}</td>
                 <td>{book.title}</td>
                 <td>{book.country_name || "—"}</td>
                 <td>{book.isbn_code || "—"}</td>
                 <td>{book.book_type_title || "—"}</td>
                 <td>{getLanguageName(book.language_id)}</td>
-                <td>{getGradeName(book.grade_id)}</td>
                 <td>{getSubjectName(book.subject_id)}</td>
                 <td>{getStandardName(book.standard_id)}</td>
                 <td>{book.format_name || "—"}</td>
@@ -174,6 +188,36 @@ const BooksTable = () => {
           )}
         </tbody>
       </table>
+      
+      {/* Pagination Controls */}
+      <div className="pagination-container">
+        <button
+          className="pagination-button"
+          onClick={() => setCurrentPage(prev => prev - 1)}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </button>
+        
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+          <button
+            key={page}
+            className={`pagination-button ${currentPage === page ? 'active' : ''}`}
+            onClick={() => setCurrentPage(page)}
+          >
+            {page}
+          </button>
+        ))}
+        
+        <button
+          className="pagination-button"
+          onClick={() => setCurrentPage(prev => prev + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </button>
+      </div>
+      </div>
     </div>
   );
 };

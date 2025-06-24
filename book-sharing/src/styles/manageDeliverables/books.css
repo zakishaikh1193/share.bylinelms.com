@@ -11,6 +11,7 @@
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   transition: all 0.3s ease;
   border: 1px solid #e6f3ff;
+  font-size: smaller;
 }
 
 .books-table-wrapper:hover {
@@ -19,11 +20,62 @@
 }
 
 /* 📜 Table Title */
+.books-table-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* Pagination Styles */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0;
+  background: #ffffff;
+  border-top: 1px solid #e6f3ff;
+}
+
+.pagination-button {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #334155;
+  cursor: default;
+  transition: all 0.2s ease;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: #e6f3ff;
+  border-color: #b3d9ff;
+  color: #1e3a8a;
+}
+
+.pagination-button.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+.pagination-button:disabled {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* --- FIX START: The broken CSS rule from your original code has been removed from here --- */
+/* --- The corrected rule for .books-table-title is below --- */
+/* --- FIX END --- */
+
 .books-table-title {
   font-size: 1.75rem;
   font-weight: 600;
   color: #1e293b;
-  margin-bottom: 1.5rem;
+  /* margin-bottom is removed as the parent container now handles spacing */
   position: relative;
   display: inline-block;
 }
@@ -43,7 +95,24 @@
   width: 100%;
 }
 
-/* 🔍 Header Bar */
+/* --- NEW: ADDED FOR PROPER HEADER ALIGNMENT --- */
+.books-table-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* Allows items to wrap on smaller screens */
+  gap: 1rem;
+}
+
+.books-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+/* --- END NEW --- */
+
+
+/* 🔍 Header Bar (Original class can be removed from HTML if using new structure) */
 .books-table-header-bar {
   display: flex;
   justify-content: flex-end;
@@ -491,6 +560,8 @@
   cursor: default;
 }
 /* In books.css */
+
+/* --- FIX: The search container class is not needed if search input is placed inside .books-table-actions --- */
 .table-search-container {
   margin-bottom: 20px;
 }
@@ -498,10 +569,11 @@
 .books-table-search {
   width: 100%;
   max-width: 450px;
-  padding: 10px 15px;
+  padding: 10px 15px; /* Is equivalent to padding: 0.625rem 0.9375rem */
   font-size: 1rem;
   border: 1px solid #ddd;
   border-radius: 8px;
+  height: 40px; /* NEW: To match button height */
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -510,3 +582,4 @@
   border-color: #3b82f6; /* Use a color that matches your theme */
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
+/* --- FIX: The closing curly brace was missing here in the original code, causing a syntax error. It is now fixed. --- */

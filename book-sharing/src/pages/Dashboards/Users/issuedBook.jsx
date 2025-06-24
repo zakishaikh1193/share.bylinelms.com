@@ -59,8 +59,12 @@ function BookDetail({ bookId, onGoBack, onReadBook }) {
   const [downloadUrl, setDownloadUrl] = useState(null);
   const [fileSize, setFileSize] = useState(null);
   const [countryName, setCountryName] = useState("N/A");
+  // NEW: State to manage the description's expanded/collapsed view
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
 
   const getFileSize = async (versionLabel) => {
+    // ... (your existing getFileSize function, no changes needed here)
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
@@ -83,6 +87,7 @@ function BookDetail({ bookId, onGoBack, onReadBook }) {
   };
 
   useEffect(() => {
+    // ... (your existing useEffect, no changes needed here)
     const token = localStorage.getItem("token");
     const headers = { Authorization: `Bearer ${token}` };
 
@@ -129,6 +134,7 @@ function BookDetail({ bookId, onGoBack, onReadBook }) {
       });
   }, [bookId]);
 
+  // ... (your existing download handlers, no changes needed)
   const handleDownload = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -155,7 +161,6 @@ function BookDetail({ bookId, onGoBack, onReadBook }) {
       alert("Download not permitted or failed.");
     }
   };
-
   const handleDownloadZip = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -182,7 +187,6 @@ function BookDetail({ bookId, onGoBack, onReadBook }) {
       alert("ZIP download not permitted or failed.");
     }
   };
-
   const handleDownloadCover = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -204,7 +208,6 @@ function BookDetail({ bookId, onGoBack, onReadBook }) {
       alert("Download not permitted or failed.");
     }
   };
-
   const handleRequestAccess = async (bookId) => {
     try {
       const token = localStorage.getItem("token");
@@ -224,21 +227,37 @@ function BookDetail({ bookId, onGoBack, onReadBook }) {
     }
   };
 
-  if (loading) return <div>Loading book...</div>;
-  if (!book) return <div>Book not found.</div>;
+  if (loading) return <div className="loading-message">Loading book...</div>;
+  if (!book) return <div className="error-message">Book not found.</div>;
+
+  // NEW: Logic for truncating the description
+  const wordLimit = 50;
+  const fullDescription = book.descriptionLong || book.description || "";
+  // Use regex \s+ to split by any whitespace, which is more robust
+  const words = fullDescription.split(/\s+/);
+  const isLongDescription = words.length > wordLimit;
+
+  const getTruncatedDescription = () => {
+    if (!isLongDescription) {
+      return fullDescription;
+    }
+    return isDescriptionExpanded 
+      ? fullDescription 
+      : `${words.slice(0, wordLimit).join(" ")}...`;
+  };
+
 
   return (
     <div className="book-detail-page issued-books">
       <div className="book-detail-card">
+        {/* ... (Your breadcrumb, table, and cover JSX remains the same) ... */}
         <div className="breadcrumb">
           <span className="breadcrumb-link" style={{ cursor: "default" }}>Dashboard</span>{" "}
           {" "}
           <span className="breadcrumb-link" style={{ cursor: "default" }}>Course Detail</span>
         </div>
-        <div className="book-content-layout">
-          <div className="book-text-content">
-            <h1 className="book-title">{book.title}</h1>
-            <p className="book-description-long">{book.descriptionLong || book.description}</p>
+        <div className="book-table-cover-row">
+          <div className="book-table-cover-row-inner">
             <div className="book-details-table-container">
               <h3 className="section-heading">Book Specifications</h3>
               <table className="book-details-table">
@@ -253,67 +272,73 @@ function BookDetail({ bookId, onGoBack, onReadBook }) {
                 </tbody>
               </table>
             </div>
-
-            {/* Tags Section */}
-            <div className="book-details-tags-container">
-              <br />
-              Popular Tags
-              <div className="book-details-tags">
-                {book.tags && book.tags.length > 0 ? (
-                  book.tags.map(tag => (
-                    <span key={tag.tag_id} className="book-detail-tag">{tag.tag_name}</span>
-                  ))
-                ) : (
-                  <></>
-                )}
-              </div>
+            <div className="book-image-container">
+              <PDFCoverPreview
+                pdfUrl={`/api/books/${book.book_id}/stream-cover`}
+                width={300}
+                height={360}
+              />
+              {fileSize && (
+                <div className="book-size-info">
+                  <span className="size-label">File Size:</span>
+                  <span className="size-value">{loading ? "Loading..." : fileSize}</span>
+                </div>
+              )}
             </div>
           </div>
-          <div className="book-image-container">
-            {/* The Link is removed, making the cover a non-interactive preview */}
-            <PDFCoverPreview
-              pdfUrl={`/api/books/${book.book_id}/stream-cover`}
-              width={300}
-              height={360}
-            />
-            {fileSize && (
-            <div className="book-size-info">
-              <span className="size-label">File Size:</span>
-              <span className="size-value">{loading ? "Loading..." : fileSize}</span>
-            </div>
+        </div>
+        <div className="book-details-tags-container">
+          <span className="tags-label">Popular Tags</span>
+          <div className="book-details-tags">
+            {book.tags && book.tags.length > 0 ? (
+              book.tags.map(tag => (
+                <span key={tag.tag_id} className="book-detail-tag">{tag.tag_name}</span>
+              ))
+            ) : (
+              <></>
             )}
           </div>
         </div>
-        <div className="action-buttons">
-          <button onClick={onGoBack} className="btn-go-back" type="button">
-            <svg className="btn-icon" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
-            Go Back
-          </button>
-          
-          {/* MODIFIED: Changed from Link to button that triggers the modal via onReadBook prop */}
-          <button
-            onClick={onReadBook}
-            className="btn-learn-more"
-            style={{ marginLeft: "10px" }}
-          >
-            Read Book
-          </button>
-
-          {downloadUrl ? (
-            <>
-              <button className="btn-learn-more" onClick={handleDownload}>Download PDF</button>
-              <button className="btn-learn-more" onClick={handleDownloadCover}>Download Cover</button>
-              {latestVersion?.zip_link ? (
-                <button className="btn-learn-more" onClick={handleDownloadZip}>Download ZIP File</button>
-              ) : (
-                <button className="btn-learn-more disabled" onClick={() => alert("ZIP file not available for this book.")}>ZIP Not Available</button>
-              )}
-            </>
-          ) : (
-            <button className="btn-learn-more" onClick={() => handleRequestAccess(book.book_id || book.id)}>Request Access</button>
+        
+        {/* NEW: Updated Description Section */}
+        <div className="book-description-section">
+          <h1 className="book-title">{book.title}</h1>
+          <p className="book-description-long">{getTruncatedDescription()}</p>
+          {isLongDescription && (
+            <button
+              onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+              className="btn-read-more"
+            >
+              {isDescriptionExpanded ? "Read Less" : "Read More"}
+            </button>
           )}
         </div>
-        <div className="footer-text">© 2025 ByLine Learning Solutions LLP</div>
+
+        {/* Action Buttons */}
+        <div className="action-buttons">
+            {/* ... (Your action buttons JSX remains the same) ... */}
+            <button onClick={onGoBack} className="btn-go-back" type="button">
+                <svg className="btn-icon" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
+                Go Back
+            </button>
+            <button onClick={onReadBook} className="btn-learn-more" style={{ marginLeft: "10px" }} >
+                Read Book
+            </button>
+            {downloadUrl ? (
+                <>
+                <button className="btn-learn-more" onClick={handleDownload}>Download PDF</button>
+                <button className="btn-learn-more" onClick={handleDownloadCover}>Download Cover</button>
+                {latestVersion?.zip_link ? (
+                    <button className="btn-learn-more" onClick={handleDownloadZip}>Download ZIP File</button>
+                ) : (
+                    <button className="btn-learn-more disabled" onClick={() => alert("ZIP file not available for this book.")}>ZIP Not Available</button>
+                )}
+                </>
+            ) : (
+                <button className="btn-learn-more" onClick={() => handleRequestAccess(book.book_id || book.id)}>Request Access</button>
+            )}
+        </div>
+        <div className="footer-text">© 2025 Byline Learning Solutions LLP</div>
       </div>
     </div>
   );

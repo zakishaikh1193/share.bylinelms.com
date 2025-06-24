@@ -1710,3 +1710,264 @@ body {
   cursor: pointer;
   color: #1e40af;
 }
+/* --- General Card Styling --- */
+.book-detail-card {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+/* --- Breadcrumb Navigation --- */
+.breadcrumb {
+  margin-bottom: 25px;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.breadcrumb-link {
+  color: #4f46e5;
+  text-decoration: none;
+}
+
+.breadcrumb-link:not([style*="cursor: default"]):hover {
+  text-decoration: underline;
+}
+
+/* --- Core Layout: Table and Cover Side-by-Side --- */
+.book-table-cover-row {
+  margin-bottom: 30px;
+}
+
+.book-table-cover-row-inner {
+  display: flex; /* This is the key to the side-by-side layout */
+  flex-wrap: wrap; /* Allows items to stack on small screens */
+  gap: 30px; /* Creates space between the table and the cover */
+  align-items: flex-start; /* Aligns items to the top */
+}
+
+.book-details-table-container {
+  flex: 2; /* Allows the table to take up more space */
+  min-width: 300px; /* Prevents the table from getting too squished */
+}
+
+.book-image-container {
+  flex: 1; /* The cover container takes up the remaining space */
+  text-align: center;
+  min-width: 250px;
+}
+
+/* --- Section Headings --- */
+.section-heading {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-top: 0;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
+/* --- Book Specifications Table --- */
+.book-details-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.book-details-table td {
+  padding: 10px 5px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.book-details-table tr:last-child td {
+  border-bottom: none;
+}
+
+.book-details-table td:first-child {
+  color: #475569;
+  font-weight: 600;
+  width: 120px; /* Fixed width for labels */
+}
+
+/* --- Book Cover & File Size --- */
+.book-image-container .pdf-cover-preview { /* Assuming your PDFCoverPreview renders a div with this class */
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  margin-bottom: 15px;
+  overflow: hidden; /* Ensures the border-radius is respected by the inner canvas/image */
+}
+
+.book-size-info {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+.size-label {
+  font-weight: 600;
+  margin-right: 5px;
+}
+
+/* --- Tags Section --- */
+.book-details-tags-container {
+  margin-bottom: 30px;
+}
+
+.tags-label {
+  display: block;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 10px;
+}
+
+.book-details-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.book-detail-tag {
+  background-color: #eef2ff;
+  color: #4338ca;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* --- Book Title and Description --- */
+.book-description-section {
+  margin-bottom: 30px;
+}
+
+.book-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.book-description-long {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+/* --- Action Buttons --- */
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Base button style */
+.action-buttons button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-learn-more {
+  background-color: #4f46e5;
+  color: white;
+}
+
+.btn-learn-more:hover {
+  background-color: #4338ca;
+}
+
+.btn-go-back {
+  background-color: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-go-back:hover {
+  background-color: #f1f5f9;
+}
+
+.btn-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+}
+
+.btn-learn-more.disabled {
+    background-color: #9ca3af;
+    color: #e5e7eb;
+    cursor: not-allowed;
+}
+
+/* --- Footer --- */
+.footer-text {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+/* --- Responsive Design for Smaller Screens --- */
+@media (max-width: 768px) {
+  .book-detail-card {
+    margin: 20px;
+    padding: 20px;
+  }
+
+  .book-table-cover-row-inner {
+    flex-direction: column; /* Stacks the table and cover vertically */
+    align-items: center; /* Center items when stacked */
+  }
+
+  .book-details-table-container,
+  .book-image-container {
+    flex: 1 1 100%; /* Allows items to take full width */
+    width: 100%;
+    max-width: 400px; /* Limit width on medium screens for better aesthetics */
+  }
+
+  .book-title {
+    font-size: 1.75rem;
+  }
+
+  .action-buttons {
+    flex-direction: column; /* Stack buttons vertically */
+  }
+
+  .action-buttons button {
+    width: 100%; /* Make buttons full-width */
+  }
+}
+
+/* Style for the 'Read More'/'Read Less' button */
+.btn-read-more {
+  background: none;
+  border: none;
+  color: #4f46e5; /* Use your primary theme color */
+  cursor: pointer;
+  padding: 4px 0; /* Minimal padding */
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-top: 10px; /* Space between description and button */
+  display: inline-block;
+  text-align: left;
+}
+
+.btn-read-more:hover {
+  text-decoration: underline;
+  color: #4338ca; /* A slightly darker shade on hover */
+}
