@@ -17,25 +17,28 @@ const SuccessPopup = ({ message, onClose }) => (
 
 // --- Assigned Books Table ---
 const AssignedBooksTable = ({ assignedBooks, edits, onEditChange, onSaveAll }) => {
-  const [editStates, setEditStates] = useState({});
+  // edits: { [book_id]: { can_download, expiry } }
+  // For grouped: { [book_id]: { can_download, expiry } } for both digital and print
 
-  useEffect(() => {
-    const initial = {};
-    assignedBooks.forEach(book => {
-      initial[book.book_id] = {
-        permission: "viewer",
-        can_download: !!book.can_download,
-        expiry: book.expiry?.split("T")[0] || ""
-      };
-    });
-    setEditStates(initial);
-  }, [assignedBooks]);
+  // Count total assigned books (digital + print)
+  const totalAssigned = assignedBooks.reduce((acc, group) => acc + (group.digital ? 1 : 0) + (group.print ? 1 : 0), 0);
 
   return (
     <div className="assigned-books-section">
       <div className="assigned-books-header">
         <h2>Assigned Books</h2>
-        
+        <div className="assigned-books-count">
+          <span className="assigned-books-icon" aria-label="Books" title="Total Assigned Books">
+            
+            {/* Book SVG icon */}
+<svg width="34px" height="40px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="24" height="24" />
+<path d="M12 6.90909C10.8999 5.50893 9.20406 4.10877 5.00119 4.00602C4.72513 3.99928 4.5 4.22351 4.5 4.49965C4.5 6.54813 4.5 14.3034 4.5 16.597C4.5 16.8731 4.72515 17.09 5.00114 17.099C9.20405 17.2364 10.8999 19.0998 12 20.5M12 6.90909C13.1001 5.50893 14.7959 4.10877 18.9988 4.00602C19.2749 3.99928 19.5 4.21847 19.5 4.49461C19.5 6.78447 19.5 14.3064 19.5 16.5963C19.5 16.8724 19.2749 17.09 18.9989 17.099C14.796 17.2364 13.1001 19.0998 12 20.5M12 6.90909L12 20.5" stroke="#000000" stroke-linejoin="round"/>
+<path d="M19.2353 6H21.5C21.7761 6 22 6.22386 22 6.5V19.539C22 19.9436 21.5233 20.2124 21.1535 20.0481C20.3584 19.6948 19.0315 19.2632 17.2941 19.2632C14.3529 19.2632 12 21 12 21C12 21 9.64706 19.2632 6.70588 19.2632C4.96845 19.2632 3.64156 19.6948 2.84647 20.0481C2.47668 20.2124 2 19.9436 2 19.539V6.5C2 6.22386 2.22386 6 2.5 6H4.76471" stroke="#000000" stroke-linejoin="round"/>
+</svg>
+          </span>
+          <span className="assigned-books-total">{totalAssigned}</span>
+        </div>
         <button className="btn-save-all" onClick={onSaveAll}>
           Save All Changes
         </button>
@@ -46,27 +49,29 @@ const AssignedBooksTable = ({ assignedBooks, edits, onEditChange, onSaveAll }) =
             <th>Book Title</th>
             <th>Version</th>
             <th>ISBN</th>
+            <th>Format</th>
             <th>Download</th>
             <th>Expiry</th>
           </tr>
         </thead>
         <tbody>
-          {assignedBooks.map(book => {
-            // Get the edit state for this specific book from props
-            const edit = edits[book.book_id] || {};
-
-            return (
-              <tr key={book.book_id}>
-                <td>{book.title}</td>
-                <td>{book.version_label}</td>
-                <td>{book.isbn_code}</td>
+          {assignedBooks.map(group => [
+            group.digital && (
+              <tr key={group.digital.book_id + '-digital'}>
+                <td>{group.title}</td>
+                <td>{group.version_label}</td>
+                <td>{group.isbn_code}</td>
+                <td>Digital</td>
                 <td className="center-text">
                   <input
                     type="checkbox"
-                    checked={!!edit.can_download} // Ensure it's a boolean
+                    checked={!!edits[group.digital.book_id]?.can_download}
                     onChange={e => {
                       const newEdits = { ...edits };
-                      newEdits[book.book_id] = { ...edit, can_download: e.target.checked };
+                      newEdits[group.digital.book_id] = {
+                        ...newEdits[group.digital.book_id],
+                        can_download: e.target.checked
+                      };
                       onEditChange(newEdits);
                     }}
                   />
@@ -74,17 +79,56 @@ const AssignedBooksTable = ({ assignedBooks, edits, onEditChange, onSaveAll }) =
                 <td>
                   <input
                     type="date"
-                    value={edit.expiry || ''} // Handle potential null value
+                    value={edits[group.digital.book_id]?.expiry || ''}
                     onChange={e => {
                       const newEdits = { ...edits };
-                      newEdits[book.book_id] = { ...edit, expiry: e.target.value };
+                      newEdits[group.digital.book_id] = {
+                        ...newEdits[group.digital.book_id],
+                        expiry: e.target.value
+                      };
                       onEditChange(newEdits);
                     }}
                   />
                 </td>
               </tr>
-            );
-          })}
+            ),
+            group.print && (
+              <tr key={group.print.book_id + '-print'}>
+                <td>{group.title}</td>
+                <td>{group.version_label}</td>
+                <td>{group.isbn_code}</td>
+                <td>Print</td>
+                <td className="center-text">
+                  <input
+                    type="checkbox"
+                    checked={!!edits[group.print.book_id]?.can_download}
+                    onChange={e => {
+                      const newEdits = { ...edits };
+                      newEdits[group.print.book_id] = {
+                        ...newEdits[group.print.book_id],
+                        can_download: e.target.checked
+                      };
+                      onEditChange(newEdits);
+                    }}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="date"
+                    value={edits[group.print.book_id]?.expiry || ''}
+                    onChange={e => {
+                      const newEdits = { ...edits };
+                      newEdits[group.print.book_id] = {
+                        ...newEdits[group.print.book_id],
+                        expiry: e.target.value
+                      };
+                      onEditChange(newEdits);
+                    }}
+                  />
+                </td>
+              </tr>
+            )
+          ])}
         </tbody>
       </table>
     </div>
@@ -99,7 +143,9 @@ const UnassignedBooksList = ({
   setFilters,
   metadata,
   searchTerm,
-  setSearchTerm
+  setSearchTerm,
+  selectedUserId,
+  authHeaders
 }) => {
   const {
     grades,
@@ -107,8 +153,7 @@ const UnassignedBooksList = ({
     languages,
     standards,
     bookTypes,
-    countries,
-    formats
+    countries
   } = metadata;
 
   // Toggle filter selection helper
@@ -127,8 +172,7 @@ const UnassignedBooksList = ({
     languages: true,
     standards: true,
     bookTypes: true,
-    countries: true,
-    formats: true
+    countries: true
   });
 
 const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
@@ -141,15 +185,13 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
       const matchStandard = filters.standards.size === 0 || filters.standards.has(book.standard_id);
       const matchBookType = filters.bookTypes.size === 0 || (book.booktype_id && filters.bookTypes.has(book.booktype_id));
       const matchCountry = filters.countries.size === 0 || (book.country_id && filters.countries.has(book.country_id));
-      const matchFormat = filters.formats.size === 0 || (book.format_id && filters.formats.has(book.format_id));
       return (
         matchGrade &&
         matchSubject &&
         matchLanguage &&
         matchStandard &&
         matchBookType &&
-        matchCountry &&
-        matchFormat
+        matchCountry
       );
     })
     .filter(book => {
@@ -174,14 +216,24 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
 
   const [selected, setSelected] = useState([]);
 
-  const toggle = id => {
+  // Helper to get group key
+  const getGroupKey = (group) =>
+    [group.title, group.isbn_code, group.grade_id, group.version_label].join('|');
+
+  // Toggle selection by group key
+  const toggle = (group) => {
+    const key = getGroupKey(group);
     setSelected(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
   };
 
+  // Assign selected groups
   const assign = () => {
-    selected.forEach(id => onAssign(id));
+    selected.forEach(key => {
+      const group = unassignedBooks.find(g => getGroupKey(g) === key);
+      if (group) onAssign(group);
+    });
     setSelected([]);
   };
 
@@ -196,7 +248,6 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
           { key: "languages", label: "Languages", items: languages, idKey: "language_id", nameKey: "language_name" },
           { key: "standards", label: "Standards", items: standards, idKey: "standard_id", nameKey: "standard_name" },
           { key: "countries", label: "Countries", items: countries, idKey: "country_id", nameKey: "country_name" },
-          { key: "formats", label: "Formats", items: formats, idKey: "format_id", nameKey: "format_name" }
         ].map(({ key, label, items, idKey, nameKey }) => (
           <div key={key} className="filter-box" aria-expanded={showFilters[key]}>
             <div className="filter-title" onClick={() => toggleFilterVisibility(key)}>
@@ -258,25 +309,26 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
 
               return (
                 <div
-                  key={book.book_id}
-                  className={`book-card ${selected.includes(book.book_id) ? "selected" : ""}`}
-                  onClick={() => toggle(book.book_id)}
+                  key={getGroupKey(book)}
+                  className={`book-card ${selected.includes(getGroupKey(book)) ? "selected" : ""}`}
+                  onClick={() => toggle(book)}
+                  style={{ width: 285 }}
                 >
                   <PDFCoverPreview
-                pdfUrl={`/api/books/${book.book_id}/stream-cover`}
-                width={250}
-                height={260}
-              />
+                    pdfUrl={`/api/books/${(book.digital || book.print).book_id}/stream-cover`}
+                    width={250}
+                    height={260}
+                  />
                   <div className="book-card-header">
                     <h3>{title}</h3>
                     <button
-                      className={`select-btn ${selected.includes(book.book_id) ? "selected" : ""}`}
+                      className={`select-btn ${selected.includes(getGroupKey(book)) ? "selected" : ""}`}
                       onClick={e => {
                         e.stopPropagation();
-                        toggle(book.book_id);
+                        toggle(book);
                       }}
                     >
-                      {selected.includes(book.book_id) ? "✓" : "+"}
+                      {selected.includes(getGroupKey(book)) ? "✓" : "+"}
                     </button>
                   </div>
                   <div className="book-card-body">
@@ -285,7 +337,6 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
                     <div className="book-meta"><span>Language:</span> {language_name || "N/A"}</div>
                     <div className="book-meta"><span>Subject:</span> {subject_name || "N/A"}</div>
                     <div className="book-meta"><span>Book Type:</span> {book_type_title || "N/A"}</div>
-                    <div className="book-meta"><span>Format:</span> {format_name || "N/A"}</div>
                     <div className="book-meta"><span>Country:</span> {country_name || "N/A"}</div>
                     <div className="book-meta"><span>ISBN:</span> {isbn_code || "N/A"}</div>
                   </div>
@@ -299,6 +350,43 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
     </div>
   );
 };
+
+// --- Helper: Group books by logical book (digital/print) ---
+function groupBooksByLogicalBook(books) {
+  const grouped = {};
+  for (const book of books) {
+    const key = [book.title, book.isbn_code, book.grade_id, book.version_label].join('|');
+    if (!grouped[key]) {
+      grouped[key] = {
+        title: book.title,
+        isbn_code: book.isbn_code,
+        grade_id: book.grade_id,
+        grade_level: book.grade_level,
+        version_label: book.version_label,
+        digital: null,
+        print: null,
+        description: book.description,
+        subject_id: book.subject_id,
+        subject_name: book.subject_name,
+        language_id: book.language_id,
+        language_name: book.language_name,
+        standard_id: book.standard_id,
+        standard_name: book.standard_name,
+        country_id: book.country_id,
+        country_name: book.country_name,
+        booktype_id: book.booktype_id,
+        book_type_title: book.book_type_title,
+        created_by: book.created_by,
+        created_at: book.created_at,
+        tags: book.tags,
+      };
+    }
+    const formatName = (book.format_name || '').toLowerCase();
+    if (formatName.includes('digital')) grouped[key].digital = book;
+    if (formatName.includes('print')) grouped[key].print = book;
+  }
+  return Object.values(grouped);
+}
 
 // --- Main Component ---
 const ManageAccess = () => {
@@ -318,8 +406,7 @@ const ManageAccess = () => {
     languages: new Set(),
     standards: new Set(),
     bookTypes: new Set(),
-    countries: new Set(),
-    formats: new Set()
+    countries: new Set()
   });
 
   // Metadata for filters
@@ -329,8 +416,7 @@ const ManageAccess = () => {
     languages: [],
     standards: [],
     bookTypes: [],
-    countries: [],
-    formats: []
+    countries: []
   });
 
   const token = localStorage.getItem("token");
@@ -356,8 +442,8 @@ const ManageAccess = () => {
     axios.get(`/api/books/user-access/${selectedUserId}`, authHeaders)
       .then(res => {
         const assigned = res.data.assignedBooks || [];
-        setAssignedBooks(res.data.assignedBooks || []);
-        setUnassignedBooks(res.data.unassignedBooks || []);
+        setAssignedBooks(groupBooksByLogicalBook(res.data.assignedBooks || []));
+        setUnassignedBooks(groupBooksByLogicalBook(res.data.unassignedBooks || []));
 const initialEdits = {};
         assigned.forEach(book => {
           initialEdits[book.book_id] = {
@@ -383,15 +469,13 @@ const initialEdits = {};
           standardsRes,
           bookTypesRes,
           countriesRes,
-          formatsRes
         ] = await Promise.all([
           axios.get('/api/grades', authHeaders),
           axios.get('/api/subjects', authHeaders),
           axios.get('/api/languages', authHeaders),
           axios.get('/api/standards', authHeaders),
           axios.get('/api/booktypes', authHeaders),
-          axios.get('/api/countries', authHeaders).catch(() => ({ data: [] })),
-          axios.get('/api/book-formats', authHeaders).catch(() => ({ data: [] }))
+          axios.get('/api/countries', authHeaders).catch(() => ({ data: [] }))
         ]);
 
         setMetadata({
@@ -401,7 +485,6 @@ const initialEdits = {};
           standards: standardsRes.data || [],
           bookTypes: bookTypesRes.data || [],
           countries: countriesRes.data || [],
-          formats: formatsRes.data || []
         });
       } catch (error) {
         console.error('Error fetching filter metadata:', error);
@@ -430,7 +513,7 @@ const initialEdits = {};
   //     .catch(err => console.error("Error saving changes:", err));
   // };
   const handleBulkUpdate = async () => {
-    // Create an array of update promises
+    // Create an array of update promises for both digital and print
     const updatePromises = Object.entries(assignedBookEdits).map(([bookId, changes]) => {
       const payload = {
         user_id: parseInt(selectedUserId),
@@ -439,52 +522,60 @@ const initialEdits = {};
         expiry: changes.expiry || null,
         can_download: changes.can_download
       };
-      // Return the axios promise
       return axios.post("/api/books/book-control", payload, authHeaders);
     });
 
     try {
-      // Wait for all update requests to complete
       await Promise.all(updatePromises);
-
-      // On success, update the main assignedBooks state to reflect saved changes
-      setAssignedBooks(prev => 
-        prev.map(book => {
-          const edit = assignedBookEdits[book.book_id];
-          if (edit) {
-            return { ...book, can_download: edit.can_download, expiry: edit.expiry };
-          }
-          return book;
+      // Refetch assigned/unassigned books for the user
+      axios.get(`/api/books/user-access/${selectedUserId}`, authHeaders)
+        .then(res => {
+          setAssignedBooks(groupBooksByLogicalBook(res.data.assignedBooks || []));
+          setUnassignedBooks(groupBooksByLogicalBook(res.data.unassignedBooks || []));
+          // --- Update assignedBookEdits with new values from backend ---
+          const initialEdits = {};
+          (res.data.assignedBooks || []).forEach(book => {
+            initialEdits[book.book_id] = {
+              can_download: !!book.can_download,
+              expiry: book.expiry?.split("T")[0] || ""
+            };
+          });
+          setAssignedBookEdits(initialEdits);
+          // --- End update ---
+          setSuccessMessage("All changes saved successfully!");
         })
-      );
-      
-      setSuccessMessage("All changes saved successfully!");
-
+        .catch(err => console.error("Error loading access data:", err));
     } catch (err) {
       console.error("Error saving all changes:", err);
       // You might want to show an error popup here as well
     }
   };
 
-  const handleAssign = bookId => {
-    const payload = {
-      user_id: parseInt(selectedUserId),
-      book_id: bookId,
-      permission: "viewer",
-      expiry: null,
-      can_download: false
-    };
+  const handleAssign = async (group) => {
+    const bookIds = [];
+    if (group.digital) bookIds.push(group.digital.book_id);
+    if (group.print) bookIds.push(group.print.book_id);
 
-    axios.post("/api/books/book-control", payload, authHeaders)
-      .then(() => {
-        const book = unassignedBooks.find(b => b.book_id === bookId);
-        if (book) {
-          setAssignedBooks(prev => [...prev, { ...book, ...payload }]);
-          setUnassignedBooks(prev => prev.filter(b => b.book_id !== bookId));
-          setSuccessMessage("Book assigned successfully!");
-        }
+    // Wait for all assignments to finish
+    await Promise.all(bookIds.map(bookId => {
+      const payload = {
+        user_id: parseInt(selectedUserId),
+        book_id: bookId,
+        permission: "viewer",
+        expiry: null,
+        can_download: false
+      };
+      return axios.post("/api/books/book-control", payload, authHeaders);
+    }));
+
+    // Refetch assigned/unassigned books for the user
+    axios.get(`/api/books/user-access/${selectedUserId}`, authHeaders)
+      .then(res => {
+        setAssignedBooks(groupBooksByLogicalBook(res.data.assignedBooks || []));
+        setUnassignedBooks(groupBooksByLogicalBook(res.data.unassignedBooks || []));
+        setSuccessMessage("Book assigned successfully!");
       })
-      .catch(err => console.error("Error assigning book:", err));
+      .catch(err => console.error("Error loading access data:", err));
   };
 
   return (
@@ -507,8 +598,10 @@ const initialEdits = {};
             filters={filters}
             setFilters={setFilters}
             metadata={metadata}
-            searchTerm={searchTerm}         // <-- ADD THIS PROP
-            setSearchTerm={setSearchTerm} 
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedUserId={selectedUserId}
+            authHeaders={authHeaders}
           />
         </>
       )}

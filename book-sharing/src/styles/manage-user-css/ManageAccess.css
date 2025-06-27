@@ -596,7 +596,6 @@ body, input, select, button {
 .assigned-books-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 30px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
   background: #fff;
   border-radius: 8px;
@@ -805,4 +804,31 @@ body, input, select, button {
   box-shadow: none;
   border-radius: 0;
   border: none; /* The wrapper has the border now */
+}
+
+.assigned-books-count {
+  display: flex;
+  align-items: center;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #2563eb;
+  margin-left: 18px;
+  margin-right: 18px;
+  background: #e0e7ff;
+  border-radius: 8px;
+  padding: 6px 16px 6px 10px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.07);
+}
+
+.assigned-books-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.assigned-books-total {
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-left: 2px;
 }

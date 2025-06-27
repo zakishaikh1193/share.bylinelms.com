@@ -10,7 +10,7 @@ const { PDFDocument } = require('pdf-lib');
 module.exports = {
 
   // New optimized cover endpoint that serves either cover or PDF first page
-  // streamOptimizedCover: async (req, res) => {
+    // streamOptimizedCover: async (req, res) => {
   //   try {
   //     const { bookId } = req.params;
 
@@ -62,34 +62,39 @@ module.exports = {
   //   }
   // },
 
-  streamOptimizedCover: async (req, res) => {
+streamOptimizedCover: async (req, res) => {
   try {
     const { bookId } = req.params;
 
-    // Get the latest version of the book PDF
+    // 1. Serve cached first-page cover if available
+    const coversDir = path.resolve(__dirname, "..", "covers");
+    if (!fs.existsSync(coversDir)) fs.mkdirSync(coversDir);
+    const cachePath = path.join(coversDir, `firstpage_${bookId}.pdf`);
+    if (fs.existsSync(cachePath)) {
+      res.setHeader("Content-Type", "application/pdf");
+      return fs.createReadStream(cachePath).pipe(res);
+    }
+
+    // 2. Generate first-page cover from PDF if not cached
     const [[version]] = await pool.query(
       `SELECT uploaded_link FROM book_versions WHERE book_id = ? ORDER BY version_id DESC LIMIT 1`,
       [bookId]
     );
-
     if (!version || !fs.existsSync(version.uploaded_link)) {
       return res.status(404).json({ error: "No PDF found" });
     }
-
-    // Extract first page from PDF and serve as cover
     const pdfBytes = fs.readFileSync(version.uploaded_link);
     const pdfDoc = await PDFDocument.load(pdfBytes);
-
     if (pdfDoc.getPageCount() === 0) {
       return res.status(404).json({ error: "PDF has no pages" });
     }
-
-    // Create a new PDF with only the first page
     const coverDoc = await PDFDocument.create();
     const [firstPage] = await coverDoc.copyPages(pdfDoc, [0]);
     coverDoc.addPage(firstPage);
-
     const coverBytes = await coverDoc.save();
+
+    // Cache the generated cover
+    fs.writeFileSync(cachePath, coverBytes);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Length", coverBytes.length);
@@ -199,8 +204,10 @@ streamBookVersion: async (req, res) => {
         country_id,
         booktype_id,
         format_id,
-        created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        created_by,
+        created_at,
+        last_updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         title,
         description,
@@ -719,6 +726,13 @@ downloadBookVersion: async (req, res) => {
     );
     if (!version) return res.status(404).json({ error: 'Version not found' });
 
+    // Step 1.5: Fetch book title for logging
+    const [[book]] = await pool.query(
+      'SELECT title FROM books WHERE book_id = ?',
+      [bookId]
+    );
+    const bookTitle = book?.title || 'N/A';
+
     // Step 2: Check download permission
     const [[control]] = await pool.query(
       `SELECT permission, can_download FROM book_control WHERE user_id = ? AND book_id = ?`,
@@ -740,7 +754,7 @@ downloadBookVersion: async (req, res) => {
 
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     // --- LOG ACTIVITY ---
-      logActivity(user_id, 'DOWNLOAD_PDF', { bookId: parseInt(bookId), bookTitle: version.book_title, versionLabel }, ip);
+    logActivity(user_id, 'DOWNLOAD_PDF', { bookId: parseInt(bookId), bookTitle, versionLabel }, ip);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${path.basename(filePath)}"`);
@@ -844,8 +858,8 @@ getUserBookAccess: async (req, res) => {
   try {
     const { user_id } = req.params;
 
-    // --- Base query with format join ---
-    const baseQuery = `
+    // --- Base query for assigned books ---
+    const assignedBaseQuery = `
       SELECT 
         b.book_id, b.title, b.description,
         b.grade_id, g.grade_level,
@@ -856,7 +870,10 @@ getUserBookAccess: async (req, res) => {
         b.booktype_id, bt.book_type_title,
         b.format_id, bf.format_name,
         c.uploaded_link AS cover,
-        bv.version_label, bv.isbn_code
+        bv.version_label, bv.isbn_code,
+        bv.zip_link,
+        bc.can_download AS can_download,
+        bc.expiry AS expiry
       FROM books b
       LEFT JOIN grades g ON b.grade_id = g.grade_id
       LEFT JOIN subjects s ON b.subject_id = s.subject_id
@@ -869,7 +886,42 @@ getUserBookAccess: async (req, res) => {
       ) lc ON b.book_id = lc.book_id
       LEFT JOIN covers c ON c.cover_id = lc.max_cover_id
       LEFT JOIN (
-        SELECT book_id, version_label, isbn_code
+        SELECT book_id, version_label, isbn_code, uploaded_link, zip_link
+        FROM book_versions
+        WHERE (book_id, version_id) IN (
+          SELECT book_id, MAX(version_id) FROM book_versions GROUP BY book_id
+        )
+      ) bv ON b.book_id = bv.book_id
+      JOIN book_control bc ON b.book_id = bc.book_id
+    `;
+
+    // --- Base query for unassigned books (NO JOIN to book_control) ---
+    const unassignedBaseQuery = `
+      SELECT 
+        b.book_id, b.title, b.description,
+        b.grade_id, g.grade_level,
+        b.subject_id, s.subject_name,
+        b.language_id, l.language_name,
+        b.standard_id,
+        b.country_id, ctry.country_name,
+        b.booktype_id, bt.book_type_title,
+        b.format_id, bf.format_name,
+        c.uploaded_link AS cover,
+        bv.version_label, bv.isbn_code,
+        bv.zip_link
+      FROM books b
+      LEFT JOIN grades g ON b.grade_id = g.grade_id
+      LEFT JOIN subjects s ON b.subject_id = s.subject_id
+      LEFT JOIN languages l ON b.language_id = l.language_id
+      LEFT JOIN booktypes bt ON b.booktype_id = bt.book_type_id
+      LEFT JOIN book_formats bf ON b.format_id = bf.format_id
+      LEFT JOIN countries ctry ON b.country_id = ctry.country_id
+      LEFT JOIN (
+        SELECT book_id, MAX(cover_id) AS max_cover_id FROM covers GROUP BY book_id
+      ) lc ON b.book_id = lc.book_id
+      LEFT JOIN covers c ON c.cover_id = lc.max_cover_id
+      LEFT JOIN (
+        SELECT book_id, version_label, isbn_code, uploaded_link, zip_link
         FROM book_versions
         WHERE (book_id, version_id) IN (
           SELECT book_id, MAX(version_id) FROM book_versions GROUP BY book_id
@@ -879,14 +931,13 @@ getUserBookAccess: async (req, res) => {
 
     // 1. Get assigned books
     const [assigned] = await pool.query(`
-      ${baseQuery}
-      JOIN book_control bc ON b.book_id = bc.book_id
+      ${assignedBaseQuery}
       WHERE bc.user_id = ?
     `, [user_id]);
 
     // 2. Get unassigned books
     const [unassigned] = await pool.query(`
-      ${baseQuery}
+      ${unassignedBaseQuery}
       WHERE b.book_id NOT IN (
         SELECT book_id FROM book_control WHERE user_id = ?
       )
@@ -1081,7 +1132,8 @@ approveAccessRequest: async (req, res) => {
              standard_id = ?,
              country_id = ?,
              booktype_id = ?,
-             format_id = ?
+             format_id = ?,
+             last_updated_at = NOW()
          WHERE book_id = ?`,
         [
           title,
@@ -1193,7 +1245,142 @@ approveAccessRequest: async (req, res) => {
       console.error('Error updating book version:', err);
       res.status(500).json({ error: 'Internal server error' });
     }
-  }
+  },
 
+  getGroupedBooks: async (req, res) => {
+    try {
+      const user_id = req.user.user_id;
+      const role = req.user.role;
+      let books;
+
+      const baseSelect = `
+        SELECT
+          b.book_id, b.title, b.description, b.grade_id, g.grade_level,
+          b.subject_id, s.subject_name,
+          b.language_id, l.language_name,
+          b.standard_id, std.standard_name,
+          b.country_id, ctry.country_name,
+          b.booktype_id, bt.book_type_title,
+          b.format_id, bf.format_name,
+          b.created_by, b.created_at,
+          c.uploaded_link AS cover,
+          bv.version_label, bv.isbn_code,
+          bv.zip_link
+        FROM books b
+        LEFT JOIN grades g ON b.grade_id = g.grade_id
+        LEFT JOIN subjects s ON b.subject_id = s.subject_id
+        LEFT JOIN languages l ON b.language_id = l.language_id
+        LEFT JOIN standards std ON b.standard_id = std.standard_id
+        LEFT JOIN booktypes bt ON b.booktype_id = bt.book_type_id
+        LEFT JOIN book_formats bf ON b.format_id = bf.format_id
+        LEFT JOIN countries ctry ON b.country_id = ctry.country_id
+        LEFT JOIN (
+          SELECT book_id, MAX(cover_id) AS max_cover_id
+          FROM covers
+          GROUP BY book_id
+        ) lc ON b.book_id = lc.book_id
+        LEFT JOIN covers c ON c.cover_id = lc.max_cover_id
+        LEFT JOIN (
+          SELECT book_id, version_label, isbn_code, uploaded_link, zip_link
+          FROM book_versions
+          WHERE (book_id, version_id) IN (
+            SELECT book_id, MAX(version_id)
+            FROM book_versions
+            GROUP BY book_id
+          )
+        ) bv ON b.book_id = bv.book_id
+      `;
+
+      if (role === 'admin') {
+        [books] = await pool.query(
+          baseSelect + `
+          WHERE NOT EXISTS (
+            SELECT 1 FROM book_ministry_reviews m
+            WHERE m.book_id = b.book_id AND m.status = 'pending'
+          )`
+        );
+      } else {
+        [books] = await pool.query(
+          baseSelect + `
+          JOIN book_control bc ON b.book_id = bc.book_id
+          WHERE bc.user_id = ?
+            AND bc.permission IN ('owner', 'editor', 'viewer')
+            AND (bc.expiry IS NULL OR bc.expiry > NOW())
+            AND NOT EXISTS (
+              SELECT 1 FROM book_ministry_reviews m
+              WHERE m.book_id = b.book_id AND m.status = 'pending'
+            )`,
+          [user_id]
+        );
+      }
+
+      // Fetch tags for all books
+      const bookIds = books.map(b => b.book_id);
+      let tagsByBook = {};
+      if (bookIds.length > 0) {
+        const [tags] = await pool.query(
+          `SELECT bt.book_id, t.tag_id, t.tag_name
+           FROM book_tags bt
+           JOIN tags t ON bt.tag_id = t.tag_id
+           WHERE bt.book_id IN (?)`, [bookIds]
+        );
+        tagsByBook = bookIds.reduce((acc, id) => {
+          acc[id] = [];
+          return acc;
+        }, {});
+        tags.forEach(tag => {
+          if (tagsByBook[tag.book_id]) {
+            tagsByBook[tag.book_id].push({ tag_id: tag.tag_id, tag_name: tag.tag_name });
+          }
+        });
+      }
+      // Attach tags to each book
+      books.forEach(book => {
+        book.tags = tagsByBook[book.book_id] || [];
+      });
+
+      // Group books by title, isbn_code, grade_id, version_label
+      const grouped = {};
+      for (const book of books) {
+        const key = [book.title, book.isbn_code, book.grade_id, book.version_label].join('|');
+        if (!grouped[key]) {
+          grouped[key] = {
+            title: book.title,
+            isbn_code: book.isbn_code,
+            grade_id: book.grade_id,
+            grade_level: book.grade_level,
+            version_label: book.version_label,
+            digital: null,
+            print: null,
+            // include all shared metadata fields needed for filters/search
+            description: book.description,
+            subject_id: book.subject_id,
+            subject_name: book.subject_name,
+            language_id: book.language_id,
+            language_name: book.language_name,
+            standard_id: book.standard_id,
+            standard_name: book.standard_name,
+            country_id: book.country_id,
+            country_name: book.country_name,
+            booktype_id: book.booktype_id,
+            book_type_title: book.book_type_title,
+            created_by: book.created_by,
+            created_at: book.created_at,
+            tags: book.tags,
+            // Add more fields as needed for filters/search
+          };
+        }
+        const formatName = (book.format_name || '').toLowerCase();
+        const bookWithZip = { ...book };
+        // Attach zip_link if available
+        if (book.zip_link) bookWithZip.zip_link = book.zip_link;
+        if (formatName.includes('digital')) grouped[key].digital = bookWithZip;
+        if (formatName.includes('print')) grouped[key].print = bookWithZip;
+      }
+      res.json({ books: Object.values(grouped) });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
 
 };

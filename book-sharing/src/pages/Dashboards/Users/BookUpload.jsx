@@ -72,6 +72,7 @@ const SubmitReview = () => {
           required
         >
           <option value="">Select a book</option>
+          <option value="general">General</option>
           {books.map((book) => (
             <option key={book.book_id} value={book.book_id}>
               {book.title}

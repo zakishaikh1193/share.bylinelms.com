@@ -6,9 +6,12 @@ const { logActivity } = require('../utils/logger');
 const reviewController = {
 createReview: async (req, res) => {
     try {
-      const { subject, description, book_id } = req.body;
+      let { subject, description, book_id } = req.body;
       const user_id = req.user.user_id;
       const file_path = req.file ? req.file.path.replace(/\\/g, '/') : null;
+
+      // If book_id is 'general', store as NULL
+      if (book_id === 'general') book_id = null;
 
       const [result] = await pool.query(
         `INSERT INTO book_user_reviews (book_id, user_id, subject, description, file_path) VALUES (?, ?, ?, ?, ?)`,
@@ -16,8 +19,12 @@ createReview: async (req, res) => {
       );
       const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
       // --- LOG ACTIVITY ---
-      const [[book]] = await pool.query('SELECT title FROM books WHERE book_id = ?', [book_id]);
-      logActivity(user_id, 'SUBMIT_REVIEW', { bookId: book_id, bookTitle: book?.title || 'N/A', reviewSubject: subject }, ip);
+      let bookTitle = 'General';
+      if (book_id) {
+        const [[book]] = await pool.query('SELECT title FROM books WHERE book_id = ?', [book_id]);
+        bookTitle = book?.title || 'N/A';
+      }
+      logActivity(user_id, 'SUBMIT_REVIEW', { bookId: book_id, bookTitle, reviewSubject: subject }, ip);
       // --------------------
 
       res.json({ review_id: result.insertId });

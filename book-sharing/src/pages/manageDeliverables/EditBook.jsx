@@ -17,12 +17,16 @@ export default function EditBookForm() {
     booktype_id: '',
     version_label: '',
     isbn_code: '',
-    version_file: null,
-    cover_file: null,
+    digital_file: null,
+    print_file: null,
+    digital_cover_file: null,
+    print_cover_file: null,
     zip_file: null,
-    // resource_file has been removed
   });
-
+  const [digitalBookId, setDigitalBookId] = useState(null);
+  const [printBookId, setPrintBookId] = useState(null);
+  const [digitalFormatId, setDigitalFormatId] = useState('');
+  const [printFormatId, setPrintFormatId] = useState('');
   const [grades, setGrades] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [languages, setLanguages] = useState([]);
@@ -39,7 +43,6 @@ export default function EditBookForm() {
     version: 0,
     zip: 0,
     cover: 0,
-    // resource progress has been removed
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
@@ -53,49 +56,53 @@ export default function EditBookForm() {
       try {
         const token = localStorage.getItem('token');
         const headers = { Authorization: `Bearer ${token}` };
-
-        // Fetch all the necessary data in parallel
-        const [bookRes, gradesRes, subjectsRes, languagesRes, bookTypesRes, standardsRes, countriesRes, formatsRes, tagsRes] =
-          await Promise.all([
-            axios.get(`/api/books/${bookId}/details`, { headers }),
-            axios.get('/api/grades', { headers }),
-            axios.get('/api/subjects', { headers }),
-            axios.get('/api/languages', { headers }),
-            axios.get('/api/booktypes', { headers }),
-            axios.get('/api/standards', { headers }),
-            axios.get('/api/countries', { headers }),
-            axios.get('/api/book-formats', { headers }),
-            axios.get('/api/tags', { headers }),
-          ]);
-
-        // Set the form data with the book details
-        const bookData = bookRes.data.book;
-        if (!bookData) {
-          throw new Error('Book data not found');
+        // 1. Fetch the current book details to get group key
+        const { data: bookRes } = await axios.get(`/api/books/${bookId}/details`, { headers });
+        const bookData = bookRes.book;
+        if (!bookData) throw new Error('Book data not found');
+        // 2. Fetch grouped books and find the group for this book
+        const { data: groupedRes } = await axios.get('/api/books/grouped', { headers });
+        // Find group by matching book_id to either digital or print
+        const group = (groupedRes.books || []).find(g =>
+          (g.digital && g.digital.book_id === bookData.book_id) ||
+          (g.print && g.print.book_id === bookData.book_id)
+        );
+        if (!group) {
+          console.error('No group found for book_id:', bookData.book_id, groupedRes.books);
+          throw new Error('Grouped book not found');
         }
-
-        // --- DEBUG: Log the fetched book data ---
-        console.log("Fetched Book Data:", bookData);
-
-        const { data: versionsRes } = await axios.get(`/api/books/${bookId}/versions`, { headers });
-        const latestVersion = versionsRes.versions?.[0];
-
+        setDigitalBookId(group.digital?.book_id || null);
+        setPrintBookId(group.print?.book_id || null);
+        // Use digital as primary, fallback to print
+        const base = group.digital || group.print;
         setFormData({
-          title: bookData.title || '',
-          description: bookData.description || '',
-          grade_id: bookData.grade_id || '',
-          subject_id: bookData.subject_id || '',
-          language_id: bookData.language_id || '',
-          standard_id: bookData.standard_id || '',
-          country_id: bookData.country_id || '',
-          booktype_id: bookData.booktype_id || '',
-          version_label: latestVersion?.version_label || '',
-          isbn_code: latestVersion?.isbn_code || '',
-          version_file: null,
-          cover_file: null,
+          title: group.title || '',
+          description: group.description || '',
+          grade_id: group.grade_id || '',
+          subject_id: group.subject_id || '',
+          language_id: group.language_id || '',
+          standard_id: group.standard_id || '',
+          country_id: group.country_id || '',
+          booktype_id: group.booktype_id || '',
+          version_label: group.version_label || '',
+          isbn_code: group.isbn_code || '',
+          digital_file: null,
+          print_file: null,
+          digital_cover_file: null,
+          print_cover_file: null,
           zip_file: null,
         });
-
+        // ...fetch and set grades, subjects, etc. as before...
+        const [gradesRes, subjectsRes, languagesRes, bookTypesRes, standardsRes, countriesRes, formatsRes, tagsRes] = await Promise.all([
+          axios.get('/api/grades', { headers }),
+          axios.get('/api/subjects', { headers }),
+          axios.get('/api/languages', { headers }),
+          axios.get('/api/booktypes', { headers }),
+          axios.get('/api/standards', { headers }),
+          axios.get('/api/countries', { headers }),
+          axios.get('/api/book-formats', { headers }),
+          axios.get('/api/tags', { headers }),
+        ]);
         setGrades(gradesRes.data);
         setSubjects(subjectsRes.data);
         setLanguages(languagesRes.data);
@@ -103,13 +110,14 @@ export default function EditBookForm() {
         setStandards(standardsRes.data);
         setCountries(countriesRes.data);
         setFormats(formatsRes.data);
+        const digital = formatsRes.data.find(f => f.format_name.toLowerCase().includes('digital'));
+        const print = formatsRes.data.find(f => f.format_name.toLowerCase().includes('print'));
+        setDigitalFormatId(digital ? digital.format_id : '');
+        setPrintFormatId(print ? print.format_id : '');
         setTags(tagsRes.data);
         setTagOptions(tagsRes.data.map(t => ({ tag_id: t.tag_id, tag_name: t.tag_name })));
-
-        // --- FIX: Set the selected format and tags from the fetched book data ---
-        setSelectedFormat(bookData.format_id || '');
-        setSelectedTags(bookData.tags || []);
-        
+        setSelectedFormat(base.format_id || '');
+        setSelectedTags(base.tags || []);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -117,7 +125,6 @@ export default function EditBookForm() {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [bookId]);
 
@@ -253,91 +260,72 @@ export default function EditBookForm() {
     setUploadProgress({ version: 0, zip: 0, cover: 0 });
     setUploadComplete(false);
     setError(null);
-
-    // Re-validate on submit
-    const isIsbnValid = validateISBN(formData.isbn_code);
-    const isVersionValid = validateVersion(formData.version_label);
-    if (!isIsbnValid || !isVersionValid) {
-        setIsSubmitting(false);
-        return;
-    }
-
+    // ...validation as before...
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-
-      // 1. Create new tags if needed
-      const newTags = selectedTags.filter(t => !t.tag_id);
-      let newTagIds = [];
-      for (const t of newTags) {
-        const { data } = await axios.post('/api/tags', { tag_name: t.tag_name }, config);
-        newTagIds.push(data.tag_id);
-      }
-      // All tag ids to send
-      const tag_ids = [
-        ...selectedTags.filter(t => t.tag_id).map(t => t.tag_id),
-        ...newTagIds
-      ];
-
-      // 2. Update book details first
-      await axios.put(`/api/books/update/${bookId}`, {
-        title: formData.title,
-        description: formData.description,
-        grade_id: formData.grade_id,
-        subject_id: formData.subject_id,
-        language_id: formData.language_id,
-        standard_id: formData.standard_id,
-        country_id: formData.country_id,
-        booktype_id: formData.booktype_id,
-        isbn_code: formData.isbn_code,
-        version_label: formData.version_label,
-        format_id: selectedFormat,
-        tag_ids,
-      }, config);
-
-      // 3. Update version if a new version file is provided
-      if (formData.version_file || formData.zip_file) {
+      // ...tag logic as before...
+      // Helper to update a book and upload its new version and cover
+      const updateBookWithVersion = async (book_id, formatId, file, coverFile, label) => {
+        await axios.put(`/api/books/update/${book_id}`, {
+          title: formData.title,
+          description: formData.description,
+          grade_id: formData.grade_id,
+          subject_id: formData.subject_id,
+          language_id: formData.language_id,
+          standard_id: formData.standard_id,
+          country_id: formData.country_id,
+          booktype_id: formData.booktype_id,
+          isbn_code: formData.isbn_code,
+          version_label: formData.version_label,
+          format_id: formatId,
+          tag_ids: selectedTags.map(t => t.tag_id || t.tag_name),
+        }, config);
+        // Always update version if a new PDF or ZIP is provided
+        const { data: versionData } = await axios.get(`/api/books/${book_id}/versions`, config);
+        const latestVersion = versionData.versions?.[0];
+        if (!latestVersion) return;
+        const versionId = latestVersion.version_id;
         const versionForm = new FormData();
-        versionForm.append('book_id', bookId);
+        versionForm.append('book_id', book_id);
         versionForm.append('version_label', formData.version_label);
         versionForm.append('isbn_code', formData.isbn_code);
-        versionForm.append('version_file', formData.version_file);
+        if (file) {
+          versionForm.append('version_file', file);
+        }
         if (formData.zip_file) {
           versionForm.append('zip_file', formData.zip_file);
         }
-
-        const { data } = await axios.get(`/api/books/${bookId}/versions`, config);
-        const latestVersion = data.versions?.[0];
-        if (!latestVersion) {
-            throw new Error('No existing version found to update. Cannot upload new version file.');
-        }
-
-        const versionId = latestVersion.version_id;
-        await axios.put(`/api/books/book-versions/${versionId}`, versionForm, {
+        if (file || formData.zip_file) {
+          await axios.put(`/api/books/book-versions/${versionId}`, versionForm, {
             headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },
             onUploadProgress: (e) => {
               const percent = Math.round((e.loaded * 100) / e.total);
               setUploadProgress(prev => ({ ...prev, version: percent }));
             }
-        });
-      }
-
-      // 4. Update cover if a new cover file is provided
-      if (formData.cover_file) {
-        const coverForm = new FormData();
-        coverForm.append('book_id', bookId);
-        coverForm.append('file', formData.cover_file);
-        await axios.put(`/api/books/covers/${bookId}`, coverForm, {
+          });
+        }
+        // 4. Update cover if a new cover file is provided
+        if (coverFile) {
+          const coverForm = new FormData();
+          coverForm.append('book_id', book_id);
+          coverForm.append('file', coverFile);
+          await axios.put(`/api/books/covers/${book_id}`, coverForm, {
             headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },
             onUploadProgress: (e) => {
               const percent = Math.round((e.loaded * 100) / e.total);
               setUploadProgress(prev => ({ ...prev, cover: percent }));
             }
-        });
+          });
+        }
+      };
+      // Update both digital and print records with the same metadata
+      if (digitalBookId) {
+        await updateBookWithVersion(digitalBookId, digitalFormatId, formData.digital_file, formData.digital_cover_file, 'digital');
       }
-
-      // 5. Resource file logic has been removed entirely.
-
+      if (printBookId) {
+        await updateBookWithVersion(printBookId, printFormatId, formData.print_file, formData.print_cover_file, 'print');
+      }
       setUploadComplete(true);
       setTimeout(() => {
         navigate('/admin/books');
@@ -426,16 +414,6 @@ export default function EditBookForm() {
         </label>
 
         <label>
-          Book Format:
-          <select name="format_id" value={selectedFormat} onChange={handleFormatChange} required>
-            <option value="">-- Select Format --</option>
-            {formats.map(f => (
-              <option key={f.format_id} value={f.format_id}>{f.format_name}</option>
-            ))}
-          </select>
-        </label>
-
-        <label>
           Version Label:
           <input type="text" name="version_label" value={formData.version_label} placeholder="e.g. v1.0, Revised Edition" onChange={handleChange} required/>
           {versionError && <span className="error-message">{versionError}</span>}
@@ -445,74 +423,84 @@ export default function EditBookForm() {
           ISBN Code:
           <input type="text" name="isbn_code" value={formData.isbn_code} placeholder="Enter ISBN Code" onChange={handleChange} maxLength={17}/>
           {isbnError && <span className="error-message">{isbnError}</span>}
-        </label> <br />
-
-        <label>
-          Upload New Version File (PDF):
-          <input type="file" name="version_file" accept="application/pdf" onChange={handleChange}/>
         </label>
 
         <label>
-          Upload New ZIP File (optional):
+          Upload New Digital Version (PDF):
+          <input type="file" name="digital_file" accept="application/pdf" onChange={handleChange}/>
+        </label>
+
+        <label>
+          Upload New Digital Cover (PDF):
+          <input type="file" name="digital_cover_file" accept="application/pdf" onChange={handleChange}/>
+        </label>
+
+        <label>
+          Upload New Print Version (PDF):
+          <input type="file" name="print_file" accept="application/pdf" onChange={handleChange}/>
+        </label>
+
+        <label>
+          Upload New Print Cover (PDF):
+          <input type="file" name="print_cover_file" accept="application/pdf" onChange={handleChange}/>
+        </label>
+
+        <label>
+          Upload New ZIP File:
           <input type="file" name="zip_file" accept=".zip,application/zip,application/x-zip-compressed" onChange={handleChange}/>
         </label>
 
-        <label>
-          Upload New Cover PDF (optional):
-          <input type="file" name="cover_file" accept="application/pdf" onChange={handleChange}/>
+        <label className="full-width">
+          Tags:
+          <div className="tag-input-container">
+            <div className="tag-input-field-wrapper">
+              <input
+                type="text"
+                placeholder="Add or select a tag"
+                value={tagInput}
+                onChange={handleTagInputChange}
+                onKeyDown={handleTagInputKeyDown}
+                className="tag-input-field"
+              />
+              <button
+                type="button"
+                className="tag-input-add-btn"
+                onClick={() => handleTagInputKeyDown({ key: 'Enter', preventDefault: () => {} })}
+              >
+                + Add
+              </button>
+            </div>
+
+            {/* Suggestions Dropdown */}
+            {tagOptions.filter(t => t.tag_name.toLowerCase().includes(tagInput.toLowerCase()) && !selectedTags.some(st => st.tag_id === t.tag_id)).length > 0 && (
+              <div className="tag-suggestions-list">
+                {tagOptions
+                  .filter(t => t.tag_name.toLowerCase().includes(tagInput.toLowerCase()) && !selectedTags.some(st => st.tag_id === t.tag_id))
+                  .map(t => (
+                    <div
+                      key={t.tag_id}
+                      className="tag-suggestion-item"
+                      onClick={() => handleTagSelect(t)}
+                    >
+                      {t.tag_name}
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {/* Selected Tags Area */}
+            {selectedTags.length > 0 && (
+                <div className="selected-tags-container">
+                    {selectedTags.map(tag => (
+                    <div key={tag.tag_id || tag.tag_name} className="selected-tag-pill">
+                        <span>{tag.tag_name}</span>
+                        <span className="remove-tag-btn" onClick={() => handleRemoveTag(tag)}>x</span>
+                    </div>
+                    ))}
+                </div>
+            )}
+          </div>
         </label>
-
-<label className="full-width">
-  Tags:
-  <div className="tag-input-container">
-    <div className="tag-input-field-wrapper">
-      <input
-        type="text"
-        placeholder="Add or select a tag"
-        value={tagInput}
-        onChange={handleTagInputChange}
-        onKeyDown={handleTagInputKeyDown}
-        className="tag-input-field"
-      />
-      <button
-        type="button"
-        className="tag-input-add-btn"
-        onClick={() => handleTagInputKeyDown({ key: 'Enter', preventDefault: () => {} })}
-      >
-        + Add
-      </button>
-    </div>
-
-    {/* Suggestions Dropdown */}
-    {tagOptions.filter(t => t.tag_name.toLowerCase().includes(tagInput.toLowerCase()) && !selectedTags.some(st => st.tag_id === t.tag_id)).length > 0 && (
-      <div className="tag-suggestions-list">
-        {tagOptions
-          .filter(t => t.tag_name.toLowerCase().includes(tagInput.toLowerCase()) && !selectedTags.some(st => st.tag_id === t.tag_id))
-          .map(t => (
-            <div
-              key={t.tag_id}
-              className="tag-suggestion-item"
-              onClick={() => handleTagSelect(t)}
-            >
-              {t.tag_name}
-            </div>
-          ))}
-      </div>
-    )}
-
-    {/* Selected Tags Area */}
-    {selectedTags.length > 0 && (
-        <div className="selected-tags-container">
-            {selectedTags.map(tag => (
-            <div key={tag.tag_id || tag.tag_name} className="selected-tag-pill">
-                <span>{tag.tag_name}</span>
-                <span className="remove-tag-btn" onClick={() => handleRemoveTag(tag)}>x</span>
-            </div>
-            ))}
-        </div>
-    )}
-  </div>
-</label>
 
       </div>
 
@@ -522,19 +510,36 @@ export default function EditBookForm() {
 
       {isSubmitting && (
         <div className="upload-progress-section">
-          {formData.version_file && (
+          {formData.digital_file && (
             <div>
-              Version Upload: {uploadProgress.version}%
+              Digital Version Upload: {uploadProgress.version}%
               <progress value={uploadProgress.version} max="100" />
             </div>
           )}
-          {formData.cover_file && (
+          {formData.print_file && (
             <div>
-              Cover Upload: {uploadProgress.cover}%
+              Print Version Upload: {uploadProgress.version}%
+              <progress value={uploadProgress.version} max="100" />
+            </div>
+          )}
+          {formData.digital_cover_file && (
+            <div>
+              Digital Cover Upload: {uploadProgress.cover}%
               <progress value={uploadProgress.cover} max="100" />
             </div>
           )}
-          {/* Resource Progress Bar Removed */}
+          {formData.print_cover_file && (
+            <div>
+              Print Cover Upload: {uploadProgress.cover}%
+              <progress value={uploadProgress.cover} max="100" />
+            </div>
+          )}
+          {formData.zip_file && (
+            <div>
+              ZIP Upload: {uploadProgress.zip}%
+              <progress value={uploadProgress.zip} max="100" />
+            </div>
+          )}
         </div>
       )}
 

@@ -16,8 +16,10 @@ export default function AddBookForm() {
     booktype_id: '',
     version_label: '',
     isbn_code: '',
-    version_file: null,
-    cover_file: null,
+    digital_file: null,
+    print_file: null,
+    digital_cover_file: null,
+    print_cover_file: null,
     resource_file: null,
     zip_file: null,
   });
@@ -39,6 +41,8 @@ export default function AddBookForm() {
   const [isbnError, setIsbnError] = useState('');
   const [versionError, setVersionError] = useState('');
   const [formats, setFormats] = useState([]);
+  const [digitalFormatId, setDigitalFormatId] = useState('');
+  const [printFormatId, setPrintFormatId] = useState('');
   const [tags, setTags] = useState([]);
   const [selectedFormat, setSelectedFormat] = useState('');
   const [tagInput, setTagInput] = useState('');
@@ -55,7 +59,13 @@ export default function AddBookForm() {
     axios.get('/api/booktypes', { headers }).then(res => setBookTypes(res.data));
     axios.get('/api/standards', { headers }).then(res => setStandards(res.data));
     axios.get('/api/countries', { headers }).then(res => setCountries(res.data));
-    axios.get('/api/book-formats', { headers }).then(res => setFormats(res.data));
+    axios.get('/api/book-formats', { headers }).then(res => {
+      setFormats(res.data);
+      const digital = res.data.find(f => f.format_name.toLowerCase().includes('digital'));
+      const print = res.data.find(f => f.format_name.toLowerCase().includes('print'));
+      setDigitalFormatId(digital ? digital.format_id : '');
+      setPrintFormatId(print ? print.format_id : '');
+    });
     axios.get('/api/tags', { headers }).then(res => {
       setTags(res.data);
       setTagOptions(res.data.map(t => ({ tag_id: t.tag_id, tag_name: t.tag_name })));
@@ -250,68 +260,78 @@ export default function AddBookForm() {
         ...newTagIds
       ];
 
-      // 2. Create book
-      const { data: book } = await axios.post('/api/books', {
-        title: formData.title,
-        description: formData.description,
-        grade_id: formData.grade_id,
-        subject_id: formData.subject_id,
-        language_id: formData.language_id,
-        standard_id: formData.standard_id,
-        country_id: formData.country_id,
-        booktype_id: formData.booktype_id,
-        format_id: selectedFormat,
-        tag_ids,
-      }, config);
-
-      const book_id = book.book_id;
-
-      // 2. Add version
-      const versionForm = new FormData();
-      versionForm.append('book_id', book_id);
-      versionForm.append('version_label', formData.version_label);
-      versionForm.append('isbn_code', formData.isbn_code);
-      versionForm.append('version_file', formData.version_file);
-      if (formData.zip_file) {
-        versionForm.append('zip_file', formData.zip_file);
-      }
-
-      await axios.post('/api/books/book-versions', versionForm, {
-        headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (e) => {
-          const percent = Math.round((e.loaded * 100) / e.total);
-          setUploadProgress(prev => ({ ...prev, version: percent }));
+      // Helper to create a book and upload its version and cover
+      const createBookWithVersion = async (formatId, file, label) => {
+        // 1. Create book
+        const { data: book } = await axios.post('/api/books', {
+          title: formData.title,
+          description: formData.description,
+          grade_id: formData.grade_id,
+          subject_id: formData.subject_id,
+          language_id: formData.language_id,
+          standard_id: formData.standard_id,
+          country_id: formData.country_id,
+          booktype_id: formData.booktype_id,
+          format_id: formatId,
+          tag_ids,
+        }, config);
+        const book_id = book.book_id;
+        // 2. Add version
+        const versionForm = new FormData();
+        versionForm.append('book_id', book_id);
+        versionForm.append('version_label', formData.version_label);
+        versionForm.append('isbn_code', formData.isbn_code);
+        versionForm.append('version_file', file);
+        if (formData.zip_file) {
+          versionForm.append('zip_file', formData.zip_file);
         }
-      });
-
-      // 3. Upload cover (optional)
-      if (formData.cover_file) {
-        const coverForm = new FormData();
-        coverForm.append('book_id', book_id);
-        coverForm.append('file', formData.cover_file);
-        await axios.post('/api/books/covers', coverForm, {
+        await axios.post('/api/books/book-versions', versionForm, {
           headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (e) => {
             const percent = Math.round((e.loaded * 100) / e.total);
-            setUploadProgress(prev => ({ ...prev, cover: percent }));
+            setUploadProgress(prev => ({ ...prev, version: percent }));
           }
         });
+        // 3. Upload cover (optional, for each format)
+        if (label === 'digital' && formData.digital_cover_file) {
+          const coverForm = new FormData();
+          coverForm.append('book_id', book_id);
+          coverForm.append('file', formData.digital_cover_file);
+          await axios.post('/api/books/covers', coverForm, {
+            headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: (e) => {
+              const percent = Math.round((e.loaded * 100) / e.total);
+              setUploadProgress(prev => ({ ...prev, cover: percent }));
+            }
+          });
+        }
+        if (label === 'print' && formData.print_cover_file) {
+          const coverForm = new FormData();
+          coverForm.append('book_id', book_id);
+          coverForm.append('file', formData.print_cover_file);
+          await axios.post('/api/books/covers', coverForm, {
+            headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: (e) => {
+              const percent = Math.round((e.loaded * 100) / e.total);
+              setUploadProgress(prev => ({ ...prev, cover: percent }));
+            }
+          });
+        }
+      };
+      // Upload logic: digital and/or print
+      const digitalFile = formData.digital_file;
+      const printFile = formData.print_file;
+      if (!digitalFile && !printFile) {
+        alert('Please upload at least one version (digital or print)');
+        setIsSubmitting(false);
+        return;
       }
-
-      // 4. Upload resource (optional)
-      if (formData.resource_file) {
-        const resForm = new FormData();
-        resForm.append('book_id', book_id);
-        resForm.append('file', formData.resource_file);
-        await axios.post('/api/books/uploads', resForm, {
-          headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },
-          onUploadProgress: (e) => {
-            const percent = Math.round((e.loaded * 100) / e.total);
-            setUploadProgress(prev => ({ ...prev, resource: percent }));
-          }
-        });
+      if (digitalFile) {
+        await createBookWithVersion(digitalFormatId, digitalFile, 'digital');
       }
-
+      if (printFile) {
+        await createBookWithVersion(printFormatId, printFile, 'print');
+      }
       setUploadComplete(true);
     } catch (err) {
       console.error(err);
@@ -413,16 +433,6 @@ export default function AddBookForm() {
           </select>
         </label>
 
-          <label>
-          Book Format:
-          <select name="format_id" value={selectedFormat} onChange={handleFormatChange} required>
-            <option value="">-- Select Format --</option>
-            {formats.map(f => (
-              <option key={f.format_id} value={f.format_id}>{f.format_name}</option>
-            ))}
-          </select>
-        </label>
-
         <label>
           Version Label:
           <input
@@ -444,85 +454,87 @@ export default function AddBookForm() {
             placeholder="e.g., 978-1-963843-03-3"
             value={formData.isbn_code}
             onChange={handleChange}
-            maxLength={17} // Maximum length for formatted ISBN-13
+            maxLength={17}
           />
           {isbnError && <span className="error-message">{isbnError}</span>}
         </label>
 
-        <br />
+        
+        
 
         <label>
-          Upload Version File (PDF):
-          <input type="file" name="version_file" accept="application/pdf" onChange={handleChange} required />
+          Upload Digital Version (PDF):
+          <input type="file" name="digital_file" accept="application/pdf" onChange={handleChange} />
         </label>
-
+        <label>
+          Upload Digital Cover (PDF):
+          <input type="file" name="digital_cover_file" accept="application/pdf" onChange={handleChange} />
+        </label>
+        <label>
+          Upload Print Version (PDF):
+          <input type="file" name="print_file" accept="application/pdf" onChange={handleChange} />
+        </label>
+        <label>
+          Upload Print Cover (PDF):
+          <input type="file" name="print_cover_file" accept="application/pdf" onChange={handleChange} />
+        </label>
         <label>
           Upload ZIP File (optional):
-          <input
-            type="file"
-            name="zip_file"
-            accept=".zip,application/zip,application/x-zip-compressed"
-            onChange={handleChange}
-          />
+          <input type="file" name="zip_file" accept=".zip,application/zip,application/x-zip-compressed" onChange={handleChange} />
         </label>
 
-        <label>
-          Upload Cover PDF (optional):
-          <input type="file" name="cover_file" accept="application/pdf" onChange={handleChange} />
+
+        <label className="full-width">
+          Tags:
+          <div className="tag-input-container">
+            <div className="tag-input-field-wrapper">
+              <input
+                type="text"
+                placeholder="Add or select a tag"
+                value={tagInput}
+                onChange={handleTagInputChange}
+                onKeyDown={handleTagInputKeyDown}
+                className="tag-input-field"
+              />
+              <button
+                type="button"
+                className="tag-input-add-btn"
+                onClick={() => handleTagInputKeyDown({ key: 'Enter', preventDefault: () => {} })}
+              >
+                + Add
+              </button>
+            </div>
+
+            {/* Suggestions Dropdown */}
+            {tagOptions.filter(t => t.tag_name.toLowerCase().includes(tagInput.toLowerCase()) && !selectedTags.some(st => st.tag_id === t.tag_id)).length > 0 && (
+              <div className="tag-suggestions-list">
+                {tagOptions
+                  .filter(t => t.tag_name.toLowerCase().includes(tagInput.toLowerCase()) && !selectedTags.some(st => st.tag_id === t.tag_id))
+                  .map(t => (
+                    <div
+                      key={t.tag_id}
+                      className="tag-suggestion-item"
+                      onClick={() => handleTagSelect(t)}
+                    >
+                      {t.tag_name}
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {/* Selected Tags Area */}
+            {selectedTags.length > 0 && (
+                <div className="selected-tags-container">
+                    {selectedTags.map(tag => (
+                    <div key={tag.tag_id || tag.tag_name} className="selected-tag-pill">
+                        <span>{tag.tag_name}</span>
+                        <span className="remove-tag-btn" onClick={() => handleRemoveTag(tag)}>x</span>
+                    </div>
+                    ))}
+                </div>
+            )}
+          </div>
         </label>
-
-<label className="full-width">
-  Tags:
-  <div className="tag-input-container">
-    <div className="tag-input-field-wrapper">
-      <input
-        type="text"
-        placeholder="Add or select a tag"
-        value={tagInput}
-        onChange={handleTagInputChange}
-        onKeyDown={handleTagInputKeyDown}
-        className="tag-input-field"
-      />
-      <button
-        type="button"
-        className="tag-input-add-btn"
-        onClick={() => handleTagInputKeyDown({ key: 'Enter', preventDefault: () => {} })}
-      >
-        + Add
-      </button>
-    </div>
-
-    {/* Suggestions Dropdown */}
-    {tagOptions.filter(t => t.tag_name.toLowerCase().includes(tagInput.toLowerCase()) && !selectedTags.some(st => st.tag_id === t.tag_id)).length > 0 && (
-      <div className="tag-suggestions-list">
-        {tagOptions
-          .filter(t => t.tag_name.toLowerCase().includes(tagInput.toLowerCase()) && !selectedTags.some(st => st.tag_id === t.tag_id))
-          .map(t => (
-            <div
-              key={t.tag_id}
-              className="tag-suggestion-item"
-              onClick={() => handleTagSelect(t)}
-            >
-              {t.tag_name}
-            </div>
-          ))}
-      </div>
-    )}
-
-    {/* Selected Tags Area */}
-    {selectedTags.length > 0 && (
-        <div className="selected-tags-container">
-            {selectedTags.map(tag => (
-            <div key={tag.tag_id || tag.tag_name} className="selected-tag-pill">
-                <span>{tag.tag_name}</span>
-                <span className="remove-tag-btn" onClick={() => handleRemoveTag(tag)}>x</span>
-            </div>
-            ))}
-        </div>
-    )}
-  </div>
-</label>
-        
       </div>
 
       {isSubmitting && (
@@ -531,16 +543,22 @@ export default function AddBookForm() {
             Version Upload: {uploadProgress.version}%
             <progress value={uploadProgress.version} max="100" />
           </div>
-          {formData.cover_file && (
+          {formData.digital_cover_file && (
             <div>
-              Cover Upload: {uploadProgress.cover}%
+              Digital Cover Upload: {uploadProgress.cover}%
               <progress value={uploadProgress.cover} max="100" />
             </div>
           )}
-          {formData.resource_file && (
+          {formData.print_cover_file && (
             <div>
-              Resource Upload: {uploadProgress.resource}%
-              <progress value={uploadProgress.resource} max="100" />
+              Print Cover Upload: {uploadProgress.cover}%
+              <progress value={uploadProgress.cover} max="100" />
+            </div>
+          )}
+          {formData.zip_file && (
+            <div>
+              ZIP Upload: {uploadProgress.zip}%
+              <progress value={uploadProgress.zip} max="100" />
             </div>
           )}
         </div>

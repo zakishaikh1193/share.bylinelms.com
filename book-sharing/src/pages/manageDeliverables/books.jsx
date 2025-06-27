@@ -23,20 +23,20 @@ const BooksTable = () => {
   const getStandardName = id => standards.find(st => st.standard_id === id)?.standard_name || '—';
 
   // Filter books based on search term
-  const filteredBooks = books.filter(book => {
+  const filteredBooks = books.filter(group => {
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    if (!lowerCaseSearchTerm) return true; // If no search term, show all books
-
+    if (!lowerCaseSearchTerm) return true;
+    // Use shared metadata for filtering
     return (
-      (book.title || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-      (book.country_name || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-      (book.isbn_code || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-      (book.book_type_title || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-      getLanguageName(book.language_id).toLowerCase().includes(lowerCaseSearchTerm) ||
-      getGradeName(book.grade_id).toLowerCase().includes(lowerCaseSearchTerm) ||
-      getSubjectName(book.subject_id).toLowerCase().includes(lowerCaseSearchTerm) ||
-      getStandardName(book.standard_id).toLowerCase().includes(lowerCaseSearchTerm) ||
-      (book.tags?.some(tag => tag.tag_name.toLowerCase().includes(lowerCaseSearchTerm)))
+      (group.title || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+      (group.country_name || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+      (group.isbn_code || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+      (group.book_type_title || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+      getLanguageName(group.language_id).toLowerCase().includes(lowerCaseSearchTerm) ||
+      getGradeName(group.grade_id).toLowerCase().includes(lowerCaseSearchTerm) ||
+      getSubjectName(group.subject_id).toLowerCase().includes(lowerCaseSearchTerm) ||
+      getStandardName(group.standard_id).toLowerCase().includes(lowerCaseSearchTerm) ||
+      (group.tags?.some(tag => tag.tag_name.toLowerCase().includes(lowerCaseSearchTerm)))
     );
   });
 
@@ -54,7 +54,7 @@ const BooksTable = () => {
       const headers = { Authorization: `Bearer ${token}` };
 
       const [booksRes, gradesRes, subjectsRes, languagesRes, standardRes] = await Promise.all([
-        axios.get('/api/books', { headers }),
+        axios.get('/api/books/grouped', { headers }),
         axios.get('/api/grades', { headers }),
         axios.get('/api/subjects', { headers }),
         axios.get('/api/languages', { headers }),
@@ -73,8 +73,6 @@ const BooksTable = () => {
       setLoading(false);
     }
   };
-
-
 
   const handleDelete = async (bookId, e) => {
     e.stopPropagation();
@@ -141,50 +139,74 @@ const BooksTable = () => {
             <th>Subject</th>
             <th>Standards</th>
             <th>Format</th>
+            <th>Created At</th>
+            <th>Last Updated</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {filteredBooks.length === 0 ? (
             <tr>
-              <td colSpan="10" className="books-table-no-data">{searchTerm ? `No books found matching "${searchTerm}"` : "No books available"}</td>
+              <td colSpan="11" className="books-table-no-data">{searchTerm ? `No books found matching "${searchTerm}"` : "No books available"}</td>
             </tr>
           ) : (
-            currentItems.map((book) => (
-              <tr key={book.book_id} className="clickable-row">
-                <td>{book.book_id}</td>
-                <td>{getGradeName(book.grade_id)}</td>
-                <td>{book.title}</td>
-                <td>{book.country_name || "—"}</td>
-                <td>{book.isbn_code || "—"}</td>
-                <td>{book.book_type_title || "—"}</td>
-                <td>{getLanguageName(book.language_id)}</td>
-                <td>{getSubjectName(book.subject_id)}</td>
-                <td>{getStandardName(book.standard_id)}</td>
-                <td>{book.format_name || "—"}</td>
-                 <td>
-                  <div className="action-buttons">
-                    <button
-                      className="books-table-edit-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/admin/edit-book/${book.book_id}`);
-                      }}
-                      title="Edit Book"
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      className="books-table-delete-btn"
-                      onClick={(e) => handleDelete(book.book_id, e)}
-                      title="Delete Book"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))
+            currentItems.map((group) => {
+              const formats = [
+                group.digital ? 'Digital' : null,
+                group.print ? 'Print' : null
+              ].filter(Boolean).join(', ');
+              return (
+                <tr key={group.title + group.isbn_code + group.grade_id + group.version_label} className="clickable-row">
+                  <td>{group.digital?.book_id || group.print?.book_id || '—'}</td>
+                  <td>{getGradeName(group.grade_id)}</td>
+                  <td>{group.title}</td>
+                  <td>{group.country_name || "—"}</td>
+                  <td>{group.isbn_code || "—"}</td>
+                  <td>{group.book_type_title || "—"}</td>
+                  <td>{getLanguageName(group.language_id)}</td>
+                  <td>{getSubjectName(group.subject_id)}</td>
+                  <td>{getStandardName(group.standard_id)}</td>
+                  <td>{formats || "—"}</td>
+                  <td>{group.created_at ? new Date(group.created_at).toLocaleString() : '—'}</td>
+                  <td>{group.last_updated_at ? new Date(group.last_updated_at).toLocaleString() : '—'}</td>
+                  <td>
+                    <div className="action-buttons-books">
+                      {/* Unified Edit Button: Use digital.book_id if present, else print.book_id */}
+                      <button
+                        className="books-table-edit-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/admin/edit-book/${group.digital?.book_id || group.print?.book_id}`);
+                        }}
+                        title="Edit Book (Both Formats)"
+                      >
+                        <FaEdit />
+                      </button>
+                      {/* Delete Digital Button */}
+                      {group.digital && (
+                        <button
+                          className="books-table-delete-btn"
+                          onClick={(e) => handleDelete(group.digital.book_id, e)}
+                          title="Delete Digital"
+                        >
+                          <FaTrash /> D
+                        </button>
+                      )}
+                      {/* Delete Print Button */}
+                      {group.print && (
+                        <button
+                          className="books-table-delete-btn"
+                          onClick={(e) => handleDelete(group.print.book_id, e)}
+                          title="Delete Print"
+                        >
+                          <FaTrash /> P
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

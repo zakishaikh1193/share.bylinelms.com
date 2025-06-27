@@ -4,8 +4,6 @@ import '../../styles/explorePageCss/bookDisplay.css';
 import PDFCoverPreview from '../../components/PDFCoverPreview';
 import FlipbookViewer from '../Dashboards/Users/FlipbookViewer';
 
-const FALLBACK_IMAGE_URL = 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=800&q=60';
-
 const Books = () => {
   const [books, setBooks] = useState([]);
   const [grades, setGrades] = useState([]);
@@ -14,18 +12,26 @@ const Books = () => {
   const [standards, setStandards] = useState([]);
   const [formats, setFormats] = useState([]);
   const [filteredBooks, setFilteredBooks] = useState([]);
-  const initialFilters = { subject: [], grade: [], bookType: [], version: [], language: [], country: [], standards: [], isbn: [], format: [] };
+  const initialFilters = { subject: [], grade: [], bookType: [], version: [], language: [], country: [], standards: [], isbn: [] };
   const [filters, setFilters] = useState(initialFilters);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [selectedBook, setSelectedBook] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [flipbookBookId, setFlipbookBookId] = useState(null);
-  const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
 
   // State for the modal's description expand/collapse feature
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   
+  // --- Filter Sidebar State ---
+  // Each filter category can be open/collapsed independently. All collapsed by default.
+  const filterCategories = ['subject', 'grade', 'bookType', 'version', 'language', 'country'];
+  const [showFilters, setShowFilters] = useState(() =>
+    filterCategories.reduce((acc, cat) => { acc[cat] = false; return acc; }, {})
+  );
 
+  const toggleFilterVisibility = (cat) => {
+    setShowFilters(prev => ({ ...prev, [cat]: !prev[cat] }));
+  };
 
   const toggleDropdown = (dropdownName) => {
     setActiveDropdown(activeDropdown === dropdownName ? null : dropdownName);
@@ -66,27 +72,57 @@ const Books = () => {
     return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
   };
 
+  // --- Helper: Group books by logical book (digital/print) ---
+  function groupBooksByLogicalBook(books) {
+    const grouped = {};
+    for (const book of books) {
+      const key = [book.title, book.isbn_code, book.grade_id, book.version_label].join('|');
+      if (!grouped[key]) {
+        grouped[key] = {
+          title: book.title,
+          isbn_code: book.isbn_code,
+          grade_id: book.grade_id,
+          grade_name: book.grade_name,
+          version_label: book.version_label,
+          digital: null,
+          print: null,
+          // ...other shared fields
+          description: book.description,
+          subject_id: book.subject_id,
+          subject_name: book.subject_name,
+          language_id: book.language_id,
+          language_name: book.language_name,
+          book_type_title: book.book_type_title,
+          country_name: book.country_name,
+          tags: book.tags,
+        };
+      }
+      const formatName = (book.format_name || '').toLowerCase();
+      if (formatName.includes('digital')) grouped[key].digital = book;
+      if (formatName.includes('print')) grouped[key].print = book;
+    }
+    return Object.values(grouped);
+  }
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
         const headers = { Authorization: `Bearer ${token}` };
         
-        const [booksRes, gradesRes, subjectsRes, languagesRes, standardsRes, bookTypesRes, formatsRes] = await Promise.all([
+        const [booksRes, gradesRes, subjectsRes, languagesRes, standardsRes, bookTypesRes] = await Promise.all([
           axios.get('/api/books', { headers }),
           axios.get('/api/grades', { headers }),
           axios.get('/api/subjects', { headers }),
           axios.get('/api/languages', { headers }),
           axios.get('/api/standards', { headers }),
           axios.get('/api/booktypes', { headers }),
-          axios.get('/api/book-formats', { headers }),
         ]);
 
         const gradeMap = new Map(gradesRes.data.map((g) => [g.grade_id, g.grade_level]));
         const subjectMap = new Map(subjectsRes.data.map((s) => [s.subject_id, s.subject_name]));
         const languageMap = new Map(languagesRes.data.map((l) => [l.language_id, l.language_name]));
         const bookTypeMap = new Map(bookTypesRes.data.map((bt) => [bt.book_type_id, bt.book_type_title]));
-        const formatMap = new Map(formatsRes.data.map((f) => [f.format_id, f.format_name]));
 
         const booksWithExtras = booksRes.data.books.map((book) => ({
           ...book,
@@ -94,19 +130,18 @@ const Books = () => {
           subject_name: subjectMap.get(book.subject_id) || 'N/A',
           language_name: languageMap.get(book.language_id) || 'N/A',
           book_type_title: bookTypeMap.get(book.booktype_id) || 'N/A',
-          format_name: formatMap.get(book.format_id) || 'N/A',
           version_label: book.version_label || 'N/A',
           isbn_code: book.isbn_code || 'N/A',
           file_size: book.file_size || book.versions?.[0]?.file_size || null,
         }));
 
-        setBooks(booksWithExtras);
-        setFilteredBooks(booksWithExtras);
+        const groupedBooks = groupBooksByLogicalBook(booksWithExtras);
+        setBooks(groupedBooks);
+        setFilteredBooks(groupedBooks);
         setGrades(gradesRes.data);
         setSubjects(subjectsRes.data);
         setLanguages(languagesRes.data);
         setStandards(standardsRes.data);
-        setFormats(formatsRes.data);
       } catch (err) {
         console.error('Fetch error:', err);
       }
@@ -115,27 +150,25 @@ const Books = () => {
   }, []);
 
   useEffect(() => {
-    const filtered = books.filter((book) => {
+    const filtered = books.filter((group) => {
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
       const searchMatch = !searchTerm || 
-        (book.title?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-        (book.description?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-        (book.grade_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-        (book.subject_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-        (book.language_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-        (book.format_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-        (book.country_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-        (book.isbn_code?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-        book.tags?.some(tag => tag.tag_name.toLowerCase().includes(lowerCaseSearchTerm));
+        (group.title?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+        (group.description?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+        (group.grade_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+        (group.subject_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+        (group.language_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+        (group.country_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+        (group.isbn_code?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+        group.tags?.some(tag => tag.tag_name.toLowerCase().includes(lowerCaseSearchTerm));
       
       if (!searchMatch) return false;
 
       const match = (list, val) => list.length === 0 || list.includes(String(val));
-      return match(filters.grade, book.grade_id) && match(filters.subject, book.subject_id) &&
-             match(filters.bookType, book.book_type_title) && match(filters.version, book.version_label) &&
-             match(filters.country, book.country_name) && match(filters.language, book.language_id) &&
-             match(filters.standards, book.standard_id) && match(filters.isbn, book.isbn_code) &&
-             match(filters.format, book.format_id);
+      return match(filters.grade, group.grade_id) && match(filters.subject, group.subject_id) &&
+             match(filters.bookType, group.book_type_title) && match(filters.version, group.version_label) &&
+             match(filters.country, group.country_name) && match(filters.language, group.language_id) &&
+             match(filters.standards, group.standard_id) && match(filters.isbn, group.isbn_code)
     });
     setFilteredBooks(filtered);
   }, [filters, books, searchTerm]);
@@ -175,24 +208,23 @@ const Books = () => {
           <h3 className="bookx-sidebar-title">Filters</h3>
           <button className="clear-filters-btn" onClick={handleClearFilters}>Clear All</button>
         </div>
-        {['subject', 'grade', 'bookType', 'version', 'language', 'country', 'format'].map((cat) => (
+        {filterCategories.map((cat) => (
           <div key={cat} className="bookx-filter-group">
-            <div className={`bookx-filter-header ${activeDropdown === cat ? 'open' : ''}`} onClick={() => toggleDropdown(cat)}>
+            <div className={`bookx-filter-header ${showFilters[cat] ? 'open' : ''}`} onClick={() => toggleFilterVisibility(cat)}>
               <div className="filter-header-title">
                 <strong>{cat.charAt(0).toUpperCase() + cat.slice(1)}</strong>
                 {filters[cat].length > 0 && <span className="filter-count">{filters[cat].length}</span>}
               </div>
-              <span className={`chevron ${activeDropdown === cat ? 'open' : ''}`}>▼</span>
+              <span className={`chevron ${showFilters[cat] ? 'open' : ''}`}>▼</span>
             </div>
-            <ul className={`bookx-options-list ${activeDropdown === cat ? 'open' : ''}`}>
-              {(cat === 'subject' ? subjects : cat === 'grade' ? grades : cat === 'language' ? languages : cat === 'format' ? formats : unique(cat))
+            <ul className={`bookx-options-list ${showFilters[cat] ? 'open' : ''}`}>
+              {(cat === 'subject' ? subjects : cat === 'grade' ? grades : cat === 'language' ? languages : unique(cat))
                 .map((option) => {
                   let value, label;
                   if (typeof option === 'object') {
                     if (cat === 'grade') { value = String(option.grade_id); label = option.grade_level; }
                     else if (cat === 'subject') { value = String(option.subject_id); label = option.subject_name; }
                     else if (cat === 'language') { value = String(option.language_id); label = option.language_name; }
-                    else if (cat === 'format') { value = String(option.format_id); label = option.format_name; }
                   } else { value = String(option); label = option; }
                   return (
                     <li key={value}>
@@ -227,44 +259,46 @@ const Books = () => {
         </div>
         <div className="bookx-grid">
           {filteredBooks.length === 0 ? (<p className="bookx-no-books">No books match selected filters.</p>) : (
-            filteredBooks.map((book) => (
-              <div key={book.book_id} className="bookx-card" onClick={() => handleSelectBook(book)}>
-                <div className="bookx-card-image-container">
-                  <PDFCoverPreview 
-                    pdfUrl={`/api/books/${book.book_id}/stream-cover`} 
-                    width={400} 
-                    height={460} 
-                    className="bookx-card-image"
-                  />
-                  <div className="bookx-card-hover-overlay">
-                    <button 
-                      className="bookx-card-hover-button" 
-                      onClick={(e) => { e.stopPropagation(); handleSelectBook(book); }}>
-                      View Details
-                    </button>
+            filteredBooks.map((group) => {
+              const main = group.digital || group.print;
+              return (
+                <div key={group.title + group.isbn_code + group.grade_id + group.version_label} className="bookx-card" onClick={() => handleSelectBook(main)}>
+                  <div className="bookx-card-image-container">
+                    <PDFCoverPreview 
+                      pdfUrl={`/api/books/${main.book_id}/stream-cover`} 
+                      width={400} 
+                      height={460} 
+                      className="bookx-card-image"
+                    />
+                    <div className="bookx-card-hover-overlay">
+                      <button 
+                        className="bookx-card-hover-button" 
+                        onClick={(e) => { e.stopPropagation(); handleSelectBook(main); }}>
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                  <div className="bookx-card-info">
+                    <h4 className="bookx-card-title">{group.title}</h4>
+                    <p className="bookx-card-description">
+                      {group.description ? group.description.substring(0, 80) + (group.description.length > 80 ? '...' : '') : 'Click to learn more about this book.'}
+                    </p>
+                    <div className="bookx-card-tags-container">
+                      {group.grade_name && group.grade_name !== 'N/A' && <span className="bookx-card-tag">{group.grade_name}</span>}
+                      {group.subject_name && group.subject_name !== 'N/A' && <span className="bookx-card-tag">Subject: {group.subject_name}</span>}
+                      {group.language_name && group.language_name !== 'N/A' && <span className="bookx-card-tag">Language: {group.language_name}</span>}
+                      {group.book_type_title && group.book_type_title !== 'N/A' && <span className="bookx-card-tag">{group.book_type_title}</span>}
+                      {group.version_label && group.version_label !== 'N/A' && <span className="bookx-card-tag">{group.version_label}</span>}
+                      {group.country_name && group.country_name !== 'N/A' && <span className="bookx-card-tag">{group.country_name}</span>}
+                      {group.isbn_code && group.isbn_code !== 'N/A' && <span className="bookx-card-tag">ISBN: {group.isbn_code}</span>}
+                      {group.tags?.map(tag => (
+                        <span key={tag.tag_id} className="bookx-card-tag tag-specific">{tag.tag_name}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div className="bookx-card-info">
-                  <h4 className="bookx-card-title">{book.title}</h4>
-                  <p className="bookx-card-description">
-                    {book.description ? book.description.substring(0, 80) + (book.description.length > 80 ? '...' : '') : 'Click to learn more about this book.'}
-                  </p>
-                  <div className="bookx-card-tags-container">
-                    {book.grade_name && book.grade_name !== 'N/A' && <span className="bookx-card-tag">{book.grade_name}</span>}
-                    {book.subject_name && book.subject_name !== 'N/A' && <span className="bookx-card-tag">Subject: {book.subject_name}</span>}
-                    {book.format_name && book.format_name !== 'N/A' && <span className="bookx-card-tag">Format: {book.format_name}</span>}
-                    {book.language_name && book.language_name !== 'N/A' && <span className="bookx-card-tag">Language: {book.language_name}</span>}
-                    {book.book_type_title && book.book_type_title !== 'N/A' && <span className="bookx-card-tag">{book.book_type_title}</span>}
-                    {book.version_label && book.version_label !== 'N/A' && <span className="bookx-card-tag">{book.version_label}</span>}
-                    {book.country_name && book.country_name !== 'N/A' && <span className="bookx-card-tag">{book.country_name}</span>}
-                    {book.isbn_code && book.isbn_code !== 'N/A' && <span className="bookx-card-tag">ISBN: {book.isbn_code}</span>}
-                    {book.tags?.map(tag => (
-                      <span key={tag.tag_id} className="bookx-card-tag tag-specific">{tag.tag_name}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -299,10 +333,6 @@ const Books = () => {
             <td>{selectedBook.book_type_title || 'N/A'}</td>
           </tr>
           <tr>
-            <td><strong>Format</strong></td>
-            <td>{selectedBook.format_name || 'N/A'}</td>
-          </tr>
-          <tr>
             <td><strong>Country</strong></td>
             <td>{selectedBook.country_name || 'N/A'}</td>
           </tr>
@@ -319,12 +349,6 @@ const Books = () => {
         <PDFCoverPreview pdfUrl={`/api/books/${selectedBook.book_id}/stream-cover`} width={250} height={300} />
     </div>
   </div>
-   <div className="bookx-details-tags">
-    <strong>Tags: </strong>
-    {selectedBook.tags?.length > 0 ? selectedBook.tags.map(tag => (
-      <span key={tag.tag_id} className="bookx-card-tag tag-specific">{tag.tag_name}</span>
-    )) : 'None'}
-  </div>
   <h2 className="bookx-details-title">{selectedBook.title}</h2>
   <p className="bookx-details-description">{truncatedDescription}</p>
   {isLongDescription && (
@@ -336,11 +360,21 @@ const Books = () => {
     </button>
   )}
 
+  {/* New container for the side-by-side layout */}
+
+
+  <div className="bookx-details-tags">
+    <strong>Tags: </strong>
+    {selectedBook.tags?.length > 0 ? selectedBook.tags.map(tag => (
+      <span key={tag.tag_id} className="bookx-card-tag tag-specific">{tag.tag_name}</span>
+    )) : 'None'}
+  </div>
+
   <div className="bookx-details-buttons">
     <button className="btn btn-secondary" onClick={() => setSelectedBook(null)}>Back</button>
     <button 
       className="btn btn-secondary"
-      onClick={() => setIsCoverModalOpen(true)}
+      onClick={() => window.open(`/api/books/${selectedBook.book_id}/stream-cover`, '_blank')}
     >
       View Cover
     </button>
@@ -365,16 +399,6 @@ const Books = () => {
           bookId={flipbookBookId}
           onClose={() => setFlipbookBookId(null)}
         />
-      )}
-
-      {/* Fullscreen Cover Modal */}
-      {isCoverModalOpen && selectedBook && (
-        <div className="fullscreen-cover-modal" onClick={() => setIsCoverModalOpen(false)}>
-          <div className="fullscreen-cover-content" onClick={e => e.stopPropagation()}>
-            <button className="fullscreen-cover-close" onClick={() => setIsCoverModalOpen(false)} aria-label="Close cover preview">×</button>
-            <PDFCoverPreview pdfUrl={`/api/books/${selectedBook.book_id}/stream-cover`} width={window.innerWidth * 0.9} height={window.innerHeight * 0.9} />
-          </div>
-        </div>
       )}
     </div>
   );

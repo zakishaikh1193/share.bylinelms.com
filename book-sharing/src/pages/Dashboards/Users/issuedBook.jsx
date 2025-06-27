@@ -49,303 +49,289 @@ function FilterCategory({ title, options, selectedOptions, onChange }) {
   );
 }
 
+// --- Grouped Book Card ---
+function GroupedBookCard({ group, onReadBook }) {
+  // Prefer digital for preview/read, else print
+  const main = group.digital || group.print;
+  const digital = group.digital;
+  const print = group.print;
 
-// --- BookDetail Component (Modified) ---
-// Now accepts `onReadBook` prop to trigger the modal
-function BookDetail({ bookId, onGoBack, onReadBook }) {
-  const [book, setBook] = useState(null);
-  const [latestVersion, setLatestVersion] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [downloadUrl, setDownloadUrl] = useState(null);
-  const [fileSize, setFileSize] = useState(null);
-  const [countryName, setCountryName] = useState("N/A");
-  // NEW: State to manage the description's expanded/collapsed view
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  // Find latest ZIP (prefer digital, else print)
+  const zipLink = (digital && digital.zip_link) || (print && print.zip_link);
+  const zipBookId = (digital && digital.book_id) || (print && print.book_id);
+  const zipVersionLabel = (digital && digital.version_label) || (print && print.version_label);
 
-
-  const getFileSize = async (versionLabel) => {
-    // ... (your existing getFileSize function, no changes needed here)
+  // Download handlers
+  const handleDownload = async (bookId, versionLabel) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(
-        `/api/books/${bookId}/file-size/${encodeURIComponent(versionLabel)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const { pdf_size, zip_size } = response.data;
-      const formatted = [];
-      if (pdf_size)
-        formatted.push(`PDF: ${(pdf_size / (1024 * 1024)).toFixed(2)} MB`);
-      if (zip_size)
-        formatted.push(`ZIP: ${(zip_size / (1024 * 1024)).toFixed(2)} MB`);
-      setFileSize(
-        formatted.length > 0 ? formatted.join(" | ") : null
-      );
-    } catch (error) {
-      console.error( "Error fetching file size:", error.response?.data || error.message);
-      setFileSize(null);
-    }
-  };
-
-  useEffect(() => {
-    // ... (your existing useEffect, no changes needed here)
-    const token = localStorage.getItem("token");
-    const headers = { Authorization: `Bearer ${token}` };
-
-    axios
-      .get(`/api/books/${bookId}/details`, { headers })
-      .then((res) => {
-        const processedBook = {
-          ...res.data.book,
-          country: res.data.book.country || res.data.book.country_name,
-          grade: res.data.book.grade || "N/A",
-          language: res.data.book.language || "N/A",
-          subject: res.data.book.subject || "N/A",
-        };
-
-        setBook(processedBook);
-        setLatestVersion(res.data.latest_version);
-
-        axios.get("/api/countries", { headers }).then((res2) => {
-          const country = res2.data.find(
-            (c) => c.country_id === processedBook.country_id
-          );
-          setCountryName(country ? country.country_name : "N/A");
-        });
-
-        if (res.data.canDownload === 1) {
-          setDownloadUrl(res.data.latest_version?.uploaded_link || null);
-          const version = res.data.latest_version;
-          if (version?.version_label) {
-            getFileSize(version.version_label);
-          } else {
-            setFileSize(null);
-          }
-        } else {
-          setDownloadUrl(null);
-          setFileSize(null);
-        }
-
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching book details:", err);
-        setLoading(false);
-        setFileSize(null);
-      });
-  }, [bookId]);
-
-  // ... (your existing download handlers, no changes needed)
-  const handleDownload = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const versionLabel = latestVersion?.version_label;
-      if (!versionLabel) {
-        alert("Version info missing. Cannot download.");
-        return;
-      }
       const blobRes = await axios.get(
-        `/api/books/${book.book_id}/download/${encodeURIComponent(versionLabel)}`,
+        `/api/books/${bookId}/download/${encodeURIComponent(versionLabel)}`,
         { headers: { Authorization: `Bearer ${token}` }, responseType: "blob" }
       );
       const blob = new Blob([blobRes.data], { type: blobRes.headers["content-type"] });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = book.title || "Book.pdf";
+      link.download = `Book_${bookId}_${versionLabel}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Download failed", err);
+      alert("Download not permitted or failed.");
+    }
+  };
+  const handleDownloadCover = async (bookId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const blobRes = await axios.get(
+        `/api/books/${bookId}/download-cover`,
+        { headers: { Authorization: `Bearer ${token}` }, responseType: "blob" }
+      );
+      const blob = new Blob([blobRes.data], { type: blobRes.headers["content-type"] });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `BookCover_${bookId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
       alert("Download not permitted or failed.");
     }
   };
   const handleDownloadZip = async () => {
+    if (!zipLink || !zipBookId || !zipVersionLabel) return alert("ZIP not available");
     try {
       const token = localStorage.getItem("token");
-      const versionLabel = latestVersion?.version_label;
-      if (!versionLabel) {
-        alert("Version info missing. Cannot download ZIP.");
-        return;
-      }
       const res = await axios.get(
-        `/api/books/${book.book_id}/download-zip/${encodeURIComponent(versionLabel)}`,
+        `/api/books/${zipBookId}/download-zip/${encodeURIComponent(zipVersionLabel)}`,
         { headers: { Authorization: `Bearer ${token}` }, responseType: "blob" }
       );
       const blob = new Blob([res.data], { type: res.headers["content-type"] });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${book.title || "Book"}_${versionLabel}.zip`;
+      link.download = `Book_${zipBookId}_${zipVersionLabel}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("ZIP download failed", err);
       alert("ZIP download not permitted or failed.");
     }
   };
-  const handleDownloadCover = async () => {
+
+  return (
+    <div className="book-card-issued">
+      <div className="book-card-issued-image-wrapper">
+        <PDFCoverPreview
+          pdfUrl={`/api/books/${main.book_id}/stream-cover`}
+          width={390}
+          height={500}
+        />
+      </div>
+      <div className="book-card-issued-content">
+        <h3 className="book-card-issued-title">{group.title}</h3>
+        <p className="book-card-issued-subtitle">{group.description?.substring(0, 40) + '...'}</p>
+        <div className="book-card-issued-tags">
+          {group.grade_level && <span className="book-card-issued-tag">Grade: {group.grade_level}</span>}
+          {group.version_label && <span className="book-card-issued-tag">{group.version_label}</span>}
+          {group.book_type_title && <span className="book-card-issued-tag">{group.book_type_title}</span>}
+          {group.country_name && <span className="book-card-issued-tag">{group.country_name}</span>}
+          {group.subject_name && <span className="book-card-issued-tag">{group.subject_name}</span>}
+          {group.language_name && <span className="book-card-issued-tag">{group.language_name}</span>}
+          {group.standard_name && <span className="book-card-issued-tag">{group.standard_name}</span>}
+          {group.tags?.map(tag => (
+            <span key={tag.tag_id} className="book-card-issued-tag tag-specific">{tag.tag_name}</span>
+          ))}
+        </div>
+        <div className="book-card-issued-actions">
+          {/* Read Book (digital only) */}
+          {digital && (
+            <button onClick={() => onReadBook(digital.book_id)} className="book-card-issued-button">Read Book</button>
+          )}
+          {/* Download Digital PDF */}
+          {digital && (
+            <button onClick={() => handleDownload(digital.book_id, digital.version_label)} className="book-card-issued-button">Download Digital PDF</button>
+          )}
+          {/* Download Digital Cover */}
+          {digital && (
+            <button onClick={() => handleDownloadCover(digital.book_id)} className="book-card-issued-button">Download Digital Cover</button>
+          )}
+          {/* Download Print PDF */}
+          {print && (
+            <button onClick={() => handleDownload(print.book_id, print.version_label)} className="book-card-issued-button">Download Print PDF</button>
+          )}
+          {/* Download Print Cover */}
+          {print && (
+            <button onClick={() => handleDownloadCover(print.book_id)} className="book-card-issued-button">Download Print Cover</button>
+          )}
+          {/* Download ZIP (latest) */}
+          {zipLink ? (
+            <button onClick={handleDownloadZip} className="book-card-issued-button">Download ZIP</button>
+          ) : (
+            <button className="book-card-issued-button disabled">ZIP Not Available</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- BookDetail Component (Grouped) ---
+function BookDetail({ group, onGoBack, onReadBook }) {
+  const main = group.digital || group.print;
+  const digital = group.digital;
+  const print = group.print;
+  const zipLink = (digital && digital.zip_link) || (print && print.zip_link);
+  const zipBookId = (digital && digital.book_id) || (print && print.book_id);
+  const zipVersionLabel = (digital && digital.version_label) || (print && print.version_label);
+
+  // Download handlers (same as before, but use bookId/versionLabel from digital/print)
+  const handleDownload = async (bookId, versionLabel) => {
     try {
       const token = localStorage.getItem("token");
       const blobRes = await axios.get(
-        `/api/books/${book.book_id}/download-cover`,
+        `/api/books/${bookId}/download/${encodeURIComponent(versionLabel)}`,
         { headers: { Authorization: `Bearer ${token}` }, responseType: "blob" }
       );
       const blob = new Blob([blobRes.data], { type: blobRes.headers["content-type"] });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${book.title || "Book"}_Cover.pdf`;
+      link.download = `Book_${bookId}_${versionLabel}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Cover download failed", err);
       alert("Download not permitted or failed.");
     }
   };
-  const handleRequestAccess = async (bookId) => {
+  const handleDownloadCover = async (bookId) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.post(
-        "/api/books/book-control/request",
-        { book_id: bookId },
-        { headers: { Authorization: `Bearer ${token}` } }
+      const blobRes = await axios.get(
+        `/api/books/${bookId}/download-cover`,
+        { headers: { Authorization: `Bearer ${token}` }, responseType: "blob" }
       );
-      if (response.data.success) {
-        alert("Access request sent successfully!");
-      } else {
-        alert("Failed to request access.");
-      }
-    } catch (error) {
-      console.error("Error requesting access:", error);
-      alert("Something went wrong while requesting access.");
+      const blob = new Blob([blobRes.data], { type: blobRes.headers["content-type"] });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `BookCover_${bookId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Download not permitted or failed.");
     }
   };
-
-  if (loading) return <div className="loading-message">Loading book...</div>;
-  if (!book) return <div className="error-message">Book not found.</div>;
-
-  // NEW: Logic for truncating the description
-  const wordLimit = 50;
-  const fullDescription = book.descriptionLong || book.description || "";
-  // Use regex \s+ to split by any whitespace, which is more robust
-  const words = fullDescription.split(/\s+/);
-  const isLongDescription = words.length > wordLimit;
-
-  const getTruncatedDescription = () => {
-    if (!isLongDescription) {
-      return fullDescription;
+  const handleDownloadZip = async () => {
+    if (!zipLink || !zipBookId || !zipVersionLabel) return alert("ZIP not available");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(
+        `/api/books/${zipBookId}/download-zip/${encodeURIComponent(zipVersionLabel)}`,
+        { headers: { Authorization: `Bearer ${token}` }, responseType: "blob" }
+      );
+      const blob = new Blob([res.data], { type: res.headers["content-type"] });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Book_${zipBookId}_${zipVersionLabel}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("ZIP download not permitted or failed.");
     }
-    return isDescriptionExpanded 
-      ? fullDescription 
-      : `${words.slice(0, wordLimit).join(" ")}...`;
   };
-
 
   return (
     <div className="book-detail-page issued-books">
       <div className="book-detail-card">
-        {/* ... (Your breadcrumb, table, and cover JSX remains the same) ... */}
         <div className="breadcrumb">
           <span className="breadcrumb-link" style={{ cursor: "default" }}>Dashboard</span>{" "}
-          {" "}
-          <span className="breadcrumb-link" style={{ cursor: "default" }}>Course Detail</span>
+          <span className="breadcrumb-link" style={{ cursor: "default" }}>Book Detail</span>
         </div>
-        <div className="book-table-cover-row">
-          <div className="book-table-cover-row-inner">
+        <div className="book-content-layout">
+          <div className="book-text-content">
+            <h1 className="book-title">{group.title}</h1>
+            <p className="book-description-long">{group.description}</p>
             <div className="book-details-table-container">
               <h3 className="section-heading">Book Specifications</h3>
               <table className="book-details-table">
                 <tbody>
-                  <tr><td><strong>Grade:</strong></td><td>{book.grade || "N/A"}</td></tr>
-                  <tr><td><strong>Version:</strong></td><td>{latestVersion?.version_label || "N/A"}</td></tr>
-                  <tr><td><strong>Language:</strong></td><td>{book.language || "N/A"}</td></tr>
-                  <tr><td><strong>Subject:</strong></td><td>{book.subject || "N/A"}</td></tr>
-                  <tr><td><strong>Country:</strong></td><td>{countryName}</td></tr>
-                  <tr><td><strong>Book Type:</strong></td><td>{book.book_type_title || book.type || "N/A"}</td></tr>
-                  <tr><td><strong>ISBN:</strong></td><td>{latestVersion?.isbn_code || book.isbn || "N/A"}</td></tr>
+                  <tr><td><strong>Grade:</strong></td><td>{group.grade_level || "N/A"}</td></tr>
+                  <tr><td><strong>Version:</strong></td><td>{group.version_label || "N/A"}</td></tr>
+                  <tr><td><strong>Language:</strong></td><td>{group.language_name || "N/A"}</td></tr>
+                  <tr><td><strong>Subject:</strong></td><td>{group.subject_name || "N/A"}</td></tr>
+                  <tr><td><strong>Country:</strong></td><td>{group.country_name || "N/A"}</td></tr>
+                  <tr><td><strong>Book Type:</strong></td><td>{group.book_type_title || "N/A"}</td></tr>
+                  <tr><td><strong>ISBN:</strong></td><td>{group.isbn_code || "N/A"}</td></tr>
+                  <tr><td><strong>Standard:</strong></td><td>{group.standard_name || "N/A"}</td></tr>
                 </tbody>
               </table>
             </div>
-            <div className="book-image-container">
-              <PDFCoverPreview
-                pdfUrl={`/api/books/${book.book_id}/stream-cover`}
-                width={300}
-                height={360}
-              />
-              {fileSize && (
-                <div className="book-size-info">
-                  <span className="size-label">File Size:</span>
-                  <span className="size-value">{loading ? "Loading..." : fileSize}</span>
-                </div>
-              )}
+            <div className="book-details-tags-container">
+              <span className="tags-label">Popular Tags</span>
+              <div className="book-details-tags">
+                {group.tags && group.tags.length > 0 ? (
+                  group.tags.map(tag => (
+                    <span key={tag.tag_id} className="book-detail-tag">{tag.tag_name}</span>
+                  ))
+                ) : null}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="book-details-tags-container">
-          <span className="tags-label">Popular Tags</span>
-          <div className="book-details-tags">
-            {book.tags && book.tags.length > 0 ? (
-              book.tags.map(tag => (
-                <span key={tag.tag_id} className="book-detail-tag">{tag.tag_name}</span>
-              ))
-            ) : (
-              <></>
-            )}
+          <div className="book-image-container">
+            <PDFCoverPreview
+              pdfUrl={`/api/books/${main.book_id}/stream-cover`}
+              width={300}
+              height={360}
+            />
           </div>
         </div>
-        
-        {/* NEW: Updated Description Section */}
-        <div className="book-description-section">
-          <h1 className="book-title">{book.title}</h1>
-          <p className="book-description-long">{getTruncatedDescription()}</p>
-          {isLongDescription && (
-            <button
-              onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-              className="btn-read-more"
-            >
-              {isDescriptionExpanded ? "Read Less" : "Read More"}
-            </button>
-          )}
-        </div>
-
         {/* Action Buttons */}
         <div className="action-buttons">
-            {/* ... (Your action buttons JSX remains the same) ... */}
-            <button onClick={onGoBack} className="btn-go-back" type="button">
-                <svg className="btn-icon" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
-                Go Back
-            </button>
-            <button onClick={onReadBook} className="btn-learn-more" style={{ marginLeft: "10px" }} >
-                Read Book
-            </button>
-            {downloadUrl ? (
-                <>
-                <button className="btn-learn-more" onClick={handleDownload}>Download PDF</button>
-                <button className="btn-learn-more" onClick={handleDownloadCover}>Download Cover</button>
-                {latestVersion?.zip_link ? (
-                    <button className="btn-learn-more" onClick={handleDownloadZip}>Download ZIP File</button>
-                ) : (
-                    <button className="btn-learn-more disabled" onClick={() => alert("ZIP file not available for this book.")}>ZIP Not Available</button>
-                )}
-                </>
-            ) : (
-                <button className="btn-learn-more" onClick={() => handleRequestAccess(book.book_id || book.id)}>Request Access</button>
-            )}
+          <button onClick={onGoBack} className="btn-go-back" type="button">Go Back</button>
+          {digital && (
+            <button onClick={() => onReadBook(digital.book_id)} className="btn-learn-more">Read Book</button>
+          )}
+          {digital && (
+            <button onClick={() => handleDownload(digital.book_id, digital.version_label)} className="btn-learn-more">Download Digital PDF</button>
+          )}
+          {digital && (
+            <button onClick={() => handleDownloadCover(digital.book_id)} className="btn-learn-more">Download Digital Cover</button>
+          )}
+          {print && (
+            <button onClick={() => handleDownload(print.book_id, print.version_label)} className="btn-learn-more">Download Print PDF</button>
+          )}
+          {print && (
+            <button onClick={() => handleDownloadCover(print.book_id)} className="btn-learn-more">Download Print Cover</button>
+          )}
+          {zipLink ? (
+            <button onClick={handleDownloadZip} className="btn-learn-more">Download ZIP</button>
+          ) : (
+            <button className="btn-learn-more disabled">ZIP Not Available</button>
+          )}
         </div>
-        <div className="footer-text">© 2025 Byline Learning Solutions LLP</div>
+        <div className="footer-text">© 2025 ByLine Learning Solutions LLP</div>
       </div>
     </div>
   );
 }
 
-// --- BooksList Component (Modified) ---
-function BooksList({ books, onReadMore, filterOptions }) {
+const Books = () => {
+  const [groups, setGroups] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [flipbookBookId, setFlipbookBookId] = useState(null);
   const [filters, setFilters] = useState({
     subject: [],
     grade: [],
@@ -353,206 +339,144 @@ function BooksList({ books, onReadMore, filterOptions }) {
     version: [],
     country: [],
     language: [],
-    format: [],
+    standard: [],
   });
   const [searchTerm, setSearchTerm] = useState('');
-
-  const filteredBooks = books.filter((book) => {
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    const searchMatch = !searchTerm ||
-      (book.title?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-      (book.description?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-      (book.grade?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-      (book.subject?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-      (book.language?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-      (book.format_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-      (book.country?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-      (book.isbn?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-      book.tags?.some(tag => tag.tag_name.toLowerCase().includes(lowerCaseSearchTerm));
-    
-    if (!searchMatch) return false;
-
-    const subjectMatch = filters.subject.length === 0 || filters.subject.includes(book.subject);
-    const gradeMatch = filters.grade.length === 0 || filters.grade.includes(book.grade);
-    const typeMatch = filters.type.length === 0 || filters.type.includes(book.type);
-    const versionMatch = filters.version.length === 0 || filters.version.includes(book.version);
-    const countryMatch = filters.country.length === 0 || filters.country.includes(book.country);
-    const languageMatch = filters.language.length === 0 || filters.language.includes(book.language);
-    const formatMatch = filters.format.length === 0 || filters.format.includes(book.format_name);
-    return subjectMatch && gradeMatch && typeMatch && versionMatch && countryMatch && languageMatch && formatMatch;
-  });
-
-  return (
-    <div className="books-list-container issued-books">
-      <aside className="filter-sidebar">
-        <h3 className="sidebar-heading">Filters</h3>
-        <FilterCategory title="Subject" options={filterOptions.subjects} selectedOptions={filters.subject} onChange={(s) => setFilters((f) => ({ ...f, subject: s }))}/>
-        <FilterCategory title="Grade" options={filterOptions.grades} selectedOptions={filters.grade} onChange={(s) => setFilters((f) => ({ ...f, grade: s }))}/>
-        <FilterCategory title="Book Type" options={filterOptions.types} selectedOptions={filters.type} onChange={(s) => setFilters((f) => ({ ...f, type: s }))}/>
-        <FilterCategory title="Format" options={filterOptions.formats} selectedOptions={filters.format} onChange={(s) => setFilters((f) => ({ ...f, format: s }))}/>
-        <FilterCategory title="Version" options={filterOptions.versions} selectedOptions={filters.version} onChange={(s) => setFilters((f) => ({ ...f, version: s }))}/>
-        <FilterCategory title="Country" options={filterOptions.countries} selectedOptions={filters.country} onChange={(s) => setFilters((f) => ({ ...f, country: s }))}/>
-        <FilterCategory title="Language" options={filterOptions.languages} selectedOptions={filters.language} onChange={(s) => setFilters((f) => ({ ...f, language: s }))}/>
-      </aside>
-      <main className="books-content-main">
-        <div className="content-header-with-search">
-          <h2 className="content-heading">Books Available</h2>
-          <div className="search-container">
-  {/* The Search Icon (SVG) */}
-<svg className="search-icon" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100" viewBox="0 0 50 50">
-<path d="M 21 3 C 11.621094 3 4 10.621094 4 20 C 4 29.378906 11.621094 37 21 37 C 24.710938 37 28.140625 35.804688 30.9375 33.78125 L 44.09375 46.90625 L 46.90625 44.09375 L 33.90625 31.0625 C 36.460938 28.085938 38 24.222656 38 20 C 38 10.621094 30.378906 3 21 3 Z M 21 5 C 29.296875 5 36 11.703125 36 20 C 36 28.296875 29.296875 35 21 35 C 12.703125 35 6 28.296875 6 20 C 6 11.703125 12.703125 5 21 5 Z"></path>
-</svg>
-  
-  {/* Your Input Field */}
-  <input
-    type="text"
-    placeholder="Search by title, description, or tag..."
-    className="bookx-search-bar"
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-  />
-</div>
-        </div>
-        {filteredBooks.length === 0 ? (
-          <p className="no-books-message">No books match the selected filters.</p>
-        ) : (
-          <div className="books-grid">
-            {filteredBooks.map((book) => (
-              <div key={book.book_id || book.id} className="book-card-issued">
-  <div className="book-card-issued-image-wrapper">
-    <PDFCoverPreview 
-      pdfUrl={`/api/books/${book.book_id}/stream-cover`} 
-      width={390} 
-      height={500} // Adjusted for a taller book look
-    />
-  </div>
-  <div className="book-card-issued-content">
-    <h3 className="book-card-issued-title">{book.title}</h3>
-    <p className="book-card-issued-subtitle">{book.description ? book.description.substring(0, 40) + '...' : book.isbn}</p>
-    
-    <div className="book-card-issued-tags">
-      {book.grade && book.grade !== 'N/A' && 
-        <span className="book-card-issued-tag">{book.grade}</span>
-      }
-      {book.format_name && book.format_name !== 'N/A' &&
-        <span className="book-card-issued-tag">{book.format_name}</span>
-      }
-      {book.subject && book.subject !== 'N/A' && 
-        <span className="book-card-issued-tag">{book.subject}</span>
-      }
-      {book.version && book.version !== 'N/A' && 
-        <span className="book-card-issued-tag">{book.version}</span>
-      }
-      {book.type && book.type !== 'N/A' && 
-        <span className="book-card-issued-tag">{book.type}</span>
-      }
-      {book.language && book.language !== 'N/A' && 
-        <span className="book-card-issued-tag">{book.language}</span>
-      }
-      {book.country && book.country !== 'N/A' && 
-        <span className="book-card-issued-tag">{book.country}</span>
-      }
-      {book.isbn && book.isbn !== 'N/A' && 
-        <span className="book-card-issued-tag">{book.isbn}</span>
-      }
-      {book.tags?.map(tag => (
-        <span key={tag.tag_id} className="book-card-issued-tag tag-specific">{tag.tag_name}</span>
-      ))}
-    </div>
-    
-    <button onClick={() => onReadMore(book)} className="book-card-issued-button" type="button">
-      Read More
-    </button>
-  </div>
-</div>
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
-
-// --- Root Component (Modified) ---
-const Books = () => {
-  const [books, setBooks] = useState([]);
-  const [selectedBook, setSelectedBook] = useState(null);
-  // NEW STATE: To control the flipbook modal
-  const [flipbookBookId, setFlipbookBookId] = useState(null);
-  
   const [filterOptions, setFilterOptions] = useState({
-    subjects: [], grades: [], types: [], versions: [], countries: [], languages: [], formats: []
+    subjects: [], grades: [], types: [], versions: [], countries: [], languages: [], standards: []
   });
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const headers = { Authorization: `Bearer ${token}` };
-
-    Promise.all([
-      axios.get("/api/books", { headers }),
-      axios.get("/api/grades", { headers }),
-      axios.get("/api/languages", { headers }),
-      axios.get("/api/subjects", { headers }),
-      axios.get("/api/booktypes", { headers }),
-      axios.get("/api/book-formats", { headers }),
-    ])
-      .then(([booksRes, gradesRes, languagesRes, subjectsRes, bookTypesRes, formatsRes]) => {
-        const gradeMap = new Map(gradesRes.data.map((g) => [g.grade_id, g.grade_level]));
-        const languageMap = new Map(languagesRes.data.map((l) => [l.language_id, l.language_name || l.name || l.title,]));
-        const subjectMap = new Map(subjectsRes.data.map((s) => [s.subject_id, s.subject_name || s.name || s.title,]));
-        const bookTypeMap = new Map(bookTypesRes.data.map((bt) => [bt.book_type_id, bt.book_type_title]));
-        const formatMap = new Map(formatsRes.data.map((f) => [f.format_id, f.format_name]));
-
-        const apiBooks = booksRes.data.books.map((book) => ({
-          id: book.book_id, book_id: book.book_id, title: book.title, description: book.description, descriptionLong: book.description,
-          grade: gradeMap.get(book.grade_id) || "N/A", version: book.version_label || "N/A", type: book.book_type_title,
-          country: book.country_name, language: languageMap.get(book.language_id) || "N/A", subject: subjectMap.get(book.subject_id) || "N/A",
-          isbn: book.isbn_code || "N/A",
-          format_name: formatMap.get(book.format_id) || "N/A",
-          tags: book.tags || [],
-          img: book.cover ? `${axios.defaults.baseURL}/${book.cover.replace(/\\/g, "/")}` : null,
-          coverUrl: book.cover ? `${axios.defaults.baseURL}/${book.cover.replace(/\\/g, "/")}` : null,
-        }));
-        setBooks(apiBooks);
+    const fetchGroupedBooks = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const headers = { Authorization: `Bearer ${token}` };
+        const { data } = await axios.get("/api/books/grouped", { headers });
+        setGroups(data.books || []);
+        // Dynamically generate filter options from accessible books (use names)
+        const books = data.books || [];
         setFilterOptions({
-          grades: [...new Set(gradesRes.data.map((g) => g.grade_level))].filter(Boolean),
-          languages: [...new Set(languagesRes.data.map((l) => l.language_name || l.name || l.title))].filter(Boolean),
-          subjects: [...new Set(subjectsRes.data.map((s) => s.subject_name || s.name || s.title))].filter(Boolean),
-          types: [...new Set(bookTypesRes.data.map((bt) => bt.book_type_title))].filter(Boolean),
-          formats: [...new Set(formatsRes.data.map((f) => f.format_name))].filter(Boolean),
-          versions: [...new Set(booksRes.data.books.map((b) => b.version_label))].filter(Boolean),
-          countries: [...new Set(booksRes.data.books.map((b) => b.country_name || "N/A"))].filter(Boolean),
+          grades: [...new Set(books.map(g => g.grade_level)).values()].filter(Boolean),
+          languages: [...new Set(books.map(g => g.language_name)).values()].filter(Boolean),
+          subjects: [...new Set(books.map(g => g.subject_name)).values()].filter(Boolean),
+          types: [...new Set(books.map(g => g.book_type_title)).values()].filter(Boolean),
+          versions: [...new Set(books.map(g => g.version_label)).values()].filter(Boolean),
+          countries: [...new Set(books.map(g => g.country_name)).values()].filter(Boolean),
+          standards: [...new Set(books.map(g => g.standard_name)).values()].filter(Boolean),
         });
-      })
-      .catch((err) => {
-        console.error("Error fetching data:", err);
-      });
+      } catch (err) {
+        setGroups([]);
+      }
+    };
+    fetchGroupedBooks();
   }, []);
+
+  // Filtering logic (no format, use names)
+  const filteredGroups = groups.filter((group) => {
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    const searchMatch = !searchTerm ||
+      (group.title?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+      (group.description?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+      (group.grade_level?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+      (group.subject_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+      (group.language_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+      (group.country_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+      (group.isbn_code?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+      (group.standard_name?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+      group.tags?.some(tag => tag.tag_name.toLowerCase().includes(lowerCaseSearchTerm));
+    if (!searchMatch) return false;
+    const subjectMatch = filters.subject.length === 0 || filters.subject.includes(group.subject_name);
+    const gradeMatch = filters.grade.length === 0 || filters.grade.includes(group.grade_level);
+    const typeMatch = filters.type.length === 0 || filters.type.includes(group.book_type_title);
+    const versionMatch = filters.version.length === 0 || filters.version.includes(group.version_label);
+    const countryMatch = filters.country.length === 0 || filters.country.includes(group.country_name);
+    const languageMatch = filters.language.length === 0 || filters.language.includes(group.language_name);
+    const standardMatch = filters.standard.length === 0 || filters.standard.includes(group.standard_name);
+    return subjectMatch && gradeMatch && typeMatch && versionMatch && countryMatch && languageMatch && standardMatch;
+  });
 
   return (
     <div className="app-container issued-books">
-      {selectedBook ? (
-        <BookDetail
-          bookId={selectedBook}
-          onGoBack={() => setSelectedBook(null)}
-          // Pass the function to open the modal with the current book's ID
-          onReadBook={() => setFlipbookBookId(selectedBook)}
-        />
-      ) : (
-        <BooksList
-          books={books}
-          onReadMore={(book) => setSelectedBook(book.book_id || book.id)}
-          filterOptions={filterOptions}
-        />
-      )}
+      
+      {/* Filter and Grid */}
+      {!selectedGroup && !flipbookBookId && (
+        <div className="issued-books-header-bar" style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', gap: '2rem' }}>
+          
+          <aside className="filter-sidebar" style={{ flex: '0 0 270px', minWidth: 220 }}>
+            <h3 className="sidebar-heading">Filters</h3>
+            <FilterCategory title="Subject" options={filterOptions.subjects} selectedOptions={filters.subject} onChange={(s) => setFilters((f) => ({ ...f, subject: s }))}/>
+            <FilterCategory title="Grade" options={filterOptions.grades} selectedOptions={filters.grade} onChange={(s) => setFilters((f) => ({ ...f, grade: s }))}/>
+            <FilterCategory title="Book Type" options={filterOptions.types} selectedOptions={filters.type} onChange={(s) => setFilters((f) => ({ ...f, type: s }))}/>
+            <FilterCategory title="Version" options={filterOptions.versions} selectedOptions={filters.version} onChange={(s) => setFilters((f) => ({ ...f, version: s }))}/>
+            <FilterCategory title="Country" options={filterOptions.countries} selectedOptions={filters.country} onChange={(s) => setFilters((f) => ({ ...f, country: s }))}/>
+            <FilterCategory title="Language" options={filterOptions.languages} selectedOptions={filters.language} onChange={(s) => setFilters((f) => ({ ...f, language: s }))}/>
+          </aside>
+          
+          {/* Main content area for search bar and grid */}
+          <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {/* Search bar container */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem', paddingRight: '2.2rem' }}>
+              <input
+                type="text"
+                placeholder="Search by title, description, or tag..."
+                className="bookx-search-bar"
+                style={{ maxWidth: 400, width: '100%', padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
 
-      {/* NEW: Conditionally render the FlipbookViewer modal */}
-      {flipbookBookId && (
+            {/* Grid of books */}
+            <div className="books-grid issued-books-grid">
+              {filteredGroups.length === 0 ? (
+                <p className="no-books-message">No books match the selected filters.</p>
+              ) : (
+                filteredGroups.map((group) => (
+                  <div
+                    key={group.title + group.isbn_code + group.grade_level + group.version_label}
+                    className="book-card-issued issued-books-card"
+                    onClick={() => setSelectedGroup(group)}
+                    style={{ cursor: "pointer", minHeight: 480, maxHeight: 1000, width: 340, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', borderRadius: 18, boxShadow: '0 2px 12px rgba(30,58,138,0.07)', background: '#fff', margin: '0.5rem', padding: '1.2rem 1.2rem 1.2rem 1.2rem', transition: 'box-shadow 0.2s', height: '100%' }}
+                  >
+                    <PDFCoverPreview
+                      pdfUrl={`/api/books/${(group.digital || group.print).book_id}/stream-cover`}
+                      width={320}
+                      height={420}
+                    />
+                    <div className="book-card-issued-content" style={{ width: '100%', marginTop: 18 }}>
+                      <h3 className="book-card-issued-title" style={{ fontSize: '1.18rem', fontWeight: 700, marginBottom: 6 }}>{group.title}</h3>
+                      <p className="book-card-issued-subtitle" style={{ fontSize: '0.98rem', color: '#64748b', marginBottom: 10 }}>{group.description?.substring(0, 40) + '...'}</p>
+                      <div className="book-card-issued-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                        {group.grade_level && <span className="book-card-issued-tag">Grade: {group.grade_level}</span>}
+                        {group.version_label && <span className="book-card-issued-tag">{group.version_label}</span>}
+                        {group.isbn_code && <span className="book-card-issued-tag">{group.isbn_code}</span>}
+                        {group.book_type_title && <span className="book-card-issued-tag">{group.book_type_title}</span>}
+                        {group.country_name && <span className="book-card-issued-tag">{group.country_name}</span>}
+                        {group.subject_name && <span className="book-card-issued-tag">{group.subject_name}</span>}
+                        {group.language_name && <span className="book-card-issued-tag">{group.language_name}</span>}
+                        {group.standard_name && <span className="book-card-issued-tag">{group.standard_name}</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </main>
+        </div>
+      )}
+      
+      {flipbookBookId ? (
         <FlipbookViewer
           bookId={flipbookBookId}
           onClose={() => setFlipbookBookId(null)}
         />
-      )}
+      ) : selectedGroup ? (
+        <BookDetail
+          group={selectedGroup}
+          onGoBack={() => setSelectedGroup(null)}
+          onReadBook={setFlipbookBookId}
+        />
+      ) : null}
     </div>
   );
 };

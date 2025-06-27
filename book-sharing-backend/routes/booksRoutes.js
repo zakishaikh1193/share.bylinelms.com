@@ -9,6 +9,7 @@ const { authenticateAdmin, authenticateUserOrAdmin } = require('../middlewares/a
 // BOOK creation and viewing
 router.post('/', authenticateAdmin, bookController.createBook);
 router.get('/', authenticateUserOrAdmin, bookController.getBooks); 
+router.get('/grouped', authenticateUserOrAdmin, bookController.getGroupedBooks);
 
 // BOOK VERSIONS - updated to accept version_file and zip_file
 router.post(
