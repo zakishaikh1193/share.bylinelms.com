@@ -1,0 +1,692 @@
+ /* 🌐 Dashboard Container */
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background: #f1f5f9; /* Light gray background */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
+}
+ 
+/* 📌 Sidebar */
+.sidebar {
+  background: #ffffff; /* White for contrast */
+  display: flex;
+  flex-direction: column;
+  width: 250px; /* Fixed width for consistency */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+ 
+.sidebar:hover {
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.08);
+}
+ 
+.collapsed .sidebar {
+  transform: translateX(-100%);
+  position: fixed;
+  z-index: 999;
+}
+ 
+/* 🧩 Sidebar Header */
+.sidebar-header {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e0e7ff; /* Light blue border */
+  background: #fafbff;
+}
+ 
+/* 📷 Sidebar Logo */
+.sidebar-logo {
+  width: 120px;
+  height: auto;
+}
+ 
+/* 📜 Sidebar Scrollable */
+.sidebar-scrollable {
+  overflow-y: auto;
+  flex-grow: 1;
+  padding: 0 16px;
+}
+ 
+.sidebar-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+ 
+.sidebar-scrollable::-webkit-scrollbar-thumb {
+  background: #94a3b8; /* Light blue-gray */
+  border-radius: 4px;
+}
+ 
+.sidebar-scrollable::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+ 
+/* 🔗 Navigation Links */
+.nav-links {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+}
+ 
+.nav-item {
+  margin-bottom: 12px;
+}
+ 
+/* 📍 Nav Link with Toggle */
+.nav-link-with-toggle {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 8px;
+  font-weight: 500;
+  color: #1e293b;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+ 
+.nav-link-with-toggle:hover {
+  background: #eff6ff; /* Light blue hover */
+  color: #3b82f6;
+}
+ 
+/* 📑 Sub Menu */
+.sub-menu {
+  list-style: none;
+  margin-left: 16px;
+  margin-top: 8px;
+}
+ 
+.sub-menu li {
+  margin: 6px 0;
+}
+ 
+.sub-menu li a {
+  text-decoration: none;
+  color: #475569;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+ 
+.sub-menu li a:hover {
+  color: #3b82f6; /* Light blue */
+}
+ 
+/* 🔄 Toggle Buttons */
+.toggle-btn,
+.floating-toggle-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #3b82f6; /* Light blue */
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+ 
+.toggle-btn:hover,
+.floating-toggle-btn:hover {
+  background: #eff6ff; /* Light blue hover */
+}
+ 
+.floating-toggle-btn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: none;
+  z-index: 1000;
+}
+ 
+/* 📄 Main Content */
+.main-content {
+  flex: 1;
+  background: #f1f5f9; /* Light gray */
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* Allow content scrolling if needed */
+}
+ 
+/* 🛠️ Top Navbar */
+.top-navbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 16px 24px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 1px solid #e0e7ff; /* Light blue border */
+}
+ 
+/* 👤 User Info */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  position: relative;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 500;
+  flex-direction: row !important;
+}
+ 
+/* 🖼️ User Avatar */
+.user-avatar {
+  background: #3b82f6; /* Light blue */
+  color: #ffffff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+ 
+.user-info:hover .user-avatar {
+  transform: scale(1.1);
+}
+ 
+/* 📋 User Dropdown */
+.user-dropdown {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  background: #ffffff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  padding: 16px;
+  width: 220px;
+  border-radius: 8px;
+  z-index: 10;
+  border: 1px solid #e0e7ff; /* Light blue border */
+  animation: fadeIn 0.3s ease-out;
+}
+ 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+ 
+.user-dropdown p {
+  font-size: 14px;
+  color: #475569;
+  margin: 6px 0;
+  line-height: 1.5;
+}
+ 
+/* 🔴 Logout Button */
+.logout-btn {
+  width: 100%;
+  background: #ef4444; /* Red, consistent with deny-btn */
+  color: #ffffff;
+  border: none;
+  margin-top: 12px;
+  padding: 8px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+ 
+.logout-btn:hover {
+  background: #dc2626; /* Darker red */
+}
+ 
+/* 📑 Content Wrapper */
+.wrapper {
+  height: 100%;
+}
+ 
+/* 📱 Responsive Styles */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 220px;
+  }
+ 
+  .wrapper {
+    padding: 20px;
+  }
+ 
+  .top-navbar {
+    padding: 12px 20px;
+  }
+}
+ 
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 200px;
+    z-index: 1000;
+    transform: translateX(-100%);
+  }
+ 
+  .dashboard-container.collapsed .sidebar {
+    transform: translateX(0);
+  }
+ 
+  .floating-toggle-btn {
+    display: block;
+  }
+ 
+  .main-content {
+    margin-left: 0;
+  }
+ 
+  .wrapper {
+    padding: 16px;
+  }
+ 
+  .top-navbar {
+    justify-content: space-between;
+    padding: 10px 16px;
+  }
+ 
+  .user-dropdown {
+    width: 180px;
+    top: 44px;
+  }
+}
+ 
+@media (max-width: 480px) {
+  .sidebar {
+    width: 180px;
+  }
+ 
+  .sidebar-header {
+    padding: 12px;
+  }
+ 
+  .sidebar-logo {
+    width: 100px;
+  }
+ 
+  .nav-link-with-toggle {
+    padding: 8px 6px;
+    font-size: 14px;
+  }
+ 
+  .sub-menu li a {
+    font-size: 13px;
+  }
+ 
+  .wrapper {
+    padding: 12px;
+  }
+  .top-navbar {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+ 
+  .user-info {
+    font-size: 13px;
+  }
+ 
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+ 
+  .user-dropdown {
+    width: 160px;
+    padding: 12px;
+  }
+ 
+  .logout-btn {
+    padding: 6px 0;
+    font-size: 13px;
+  }
+}
+/* Existing CSS with modifications for button alignment */
+ 
+/* === BACKGROUND === */
+/* src/styles/AdminDashboard.css */
+ 
+.background {
+  /* Relative path from AdminDashboard.css to bg-header1.jpg */
+   /* This is the path for src/assests/images/ */
+ 
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  min-height: 80vh;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+ 
+}
+ 
+/* Keep your ::before pseudo-element for opacity reduction */
+.background {
+   top: 0;
+  right: 0;
+  height: 100%;
+  width: 100%;
+  background: url('../assests/images/backgroundImage.jpg') no-repeat center center;
+  background-size: cover;
+  z-index: 0;
+  opacity: 1;
+
+}
+
+/* === DASHBOARD LAYOUT === */
+.dashboard-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  padding: 2rem;
+  background: rgba(114, 164, 238, 0.1); /* semi-transparent blue */
+  color: #e0e7ff;
+}
+ 
+.dashboard-box {
+  display: flex;
+  flex-direction: row;
+  border-radius: 20px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+ 
+ 
+.dashboard-flex {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 2rem;
+  padding: 2rem;
+}
+ 
+/* === IMAGES === */
+.book-img {
+  width: 100%;
+  height: 100%;
+  max-width: 450px;
+  max-height: 500px;
+  object-fit: cover;
+  border-radius: 16px;
+  flex: 1;
+ 
+}
+ 
+.book-img:hover {
+  transform: scale(1.03);
+}
+ 
+/* === TEXT === */
+.dashboard-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: #ffffff;
+}
+ 
+.dashboard-text h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.75rem;
+}
+ 
+.dashboard-text p {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin-bottom: 1.2rem;
+}
+ 
+/* === BUTTONS === */
+.button-container {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  align-items: center;
+}
+ 
+.dashboard-button {
+  padding: 0.6rem 1.4rem;
+  font-size: 0.95rem;
+  background-color: #007bff;
+  color: #fff;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+ 
+.dashboard-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+ 
+/* === OPTIONAL: Google Play Button === */
+.google-play-button {
+  background-color: #4caf50;
+}
+ 
+.google-play-button:hover {
+  background-color: #45a049;
+}
+/* src/styles/AdminDashboard.css */
+ 
+/* ... (your existing CSS for .dashboard-stats-grid and DashboardStatsCard) ... */
+ 
+/* --- New Class for Horizontal Stats Layout --- */
+.dashboard-stats-horizontal {
+  display: flex; /* Use flexbox to arrange children horizontally */
+  gap: 25px; /* Space between the cards */
+  flex-wrap: wrap; /* Allow cards to wrap to the next line on smaller screens */
+  justify-content: center; /* Center the cards if there's extra space */
+  width: 100%; /* Ensure it takes full width of its parent */
+  grid-column: 1 / -1; /* Make this flex container span all grid columns of its parent */
+}
+ 
+/* You might want to adjust .dashboard-stats-grid if it's currently dictating individual card layout */
+/* For example, if .dashboard-stats-grid was directly applying grid-template-columns, you can simplify it: */
+.dashboard-stats-grid {
+  /* This parent now primarily acts as a wrapper with margin/padding for the entire stats section */
+  margin-top: 30px;
+  padding: 0 20px;
+  /* Remove grid-template-columns from here if you want .dashboard-stats-horizontal to control it */
+  /* If you want a full-width container for stats grid, ensure it's not limiting width too much */
+  display: flex; /* Make it a flex container */
+  justify-content: center; /* Center its content */
+}
+ 
+/* Adjustments for individual cards within the horizontal layout */
+.dashboard-stats-horizontal .dashboard-stats-card {
+  flex: 1; /* Allow cards to grow and shrink */
+  min-width: 300px; /* Ensure they don't get too small before wrapping */
+  max-width: 450px; /* Optional: control max width for aesthetic balance */
+}
+ 
+/* --- Responsive adjustments for DashboardStatsCard (re-checking relevant parts) --- */
+ 
+@media (max-width: 992px) {
+  /* ... (your existing .dashboard-stats-card styles for 992px) ... */
+  .dashboard-stats-horizontal {
+    gap: 20px; /* Slightly reduce gap on smaller screens */
+  }
+  .dashboard-stats-horizontal .dashboard-stats-card {
+    min-width: unset; /* Allow flexibility */
+    width: 100%; /* Each card can take full width if needed for stacking */
+    max-width: none; /* Remove max-width constraint for smaller screens */
+  }
+}
+ 
+@media (max-width: 768px) {
+  /* ... (your existing .dashboard-stats-card styles for 768px) ... */
+  .dashboard-stats-horizontal {
+    flex-direction: column; /* Force stacking on smaller phones */
+    align-items: center; /* Center stacked cards */
+  }
+}
+ 
+@media (max-width: 480px) {
+  /* ... (your existing .dashboard-stats-card styles for 480px) ... */
+  .dashboard-stats-horizontal {
+    gap: 15px; /* Further reduce gap for small screens */
+  }
+}
+/* --- Refined DashboardStatsCard Component Styles --- */
+ 
+/* Base style for each individual stats card */
+.dashboard-stats-card {
+  background-color: #ffffff;
+  border-radius: 15px; /* Slightly larger, softer border-radius */
+  padding: 30px; /* Increased padding for more breathing room */
+  display: flex;
+  align-items: center;
+  gap: 25px; /* Increased gap between icon and content */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.03); /* Softer, layered shadow with a subtle outline */
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smoother, more natural transition curve */
+  overflow: hidden;
+  position: relative;
+  min-width: 280px;
+  border: 1px solid transparent; /* Prepare for subtle border on hover */
+}
+ 
+/* Hover effect for the stats card */
+.dashboard-stats-card:hover {
+  transform: translateY(-8px) scale(1.02); /* More pronounced lift and slight scale for engagement */
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05); /* Deeper shadow on hover */
+  border-color: rgba(0, 123, 255, 0.3); /* Subtle blue border on hover */
+}
+ 
+/* Style for the icon container within the card */
+.dashboard-stats-card-icon {
+  font-size: 4.2em; /* Slightly larger, more impactful icon */
+  color: #007bff; /* Primary brand blue for default */
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(0, 123, 255, 0.05)); /* Subtle gradient background for icons */
+  padding: 15px; /* Padding around the icon itself */
+  border-radius: 50%; /* Make it a circular background */
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 0 2px 5px rgba(0, 0, 0, 0.1); /* Inner and outer subtle icon shadow */
+}
+ 
+/* Specific color overrides for different cards - using more vibrant, distinct shades */
+.dashboard-stats-card.total-books .dashboard-stats-card-icon {
+  color: #28a745; /* Deeper, richer green */
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05));
+}
+ 
+.dashboard-stats-card.total-users .dashboard-stats-card-icon {
+  color: #ffc107; /* A bright, engaging orange/yellow */
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05));
+}
+ 
+/* Container for the text content (title and count) of the card */
+.dashboard-stats-card-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-grow: 1;
+}
+ 
+/* Style for the title text (e.g., "Total Books") */
+.dashboard-stats-card-title {
+  font-size: 1.15em; /* Slightly larger for better readability */
+  color: #6a737d; /* A more sophisticated dark grey */
+  margin-bottom: 8px; /* More space below the title */
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.8px; /* Slightly more spacious lettering for clarity */
+  opacity: 0.9; /* Slightly softer appearance */
+}
+ 
+/* Style for the numerical count (e.g., "1250") */
+.dashboard-stats-card-count {
+  font-size: 3.8em; /* A bit larger for more impact */
+  font-weight: 800; /* Extra bold for strong visual presence */
+  color: #2c3e50; /* A very dark, almost black, but soft color for contrast */
+  line-height: 1;
+  letter-spacing: -2px; /* Tighter letter spacing for a punchy look */
+  animation: fadeInCount 1.2s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; /* Longer, smoother animation */
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05); /* Subtle text shadow for depth */
+}
+ 
+/* Refined Keyframe animation for the counting effect */
+@keyframes fadeInCount {
+  from { opacity: 0; transform: translateY(20px); filter: blur(5px); } /* Start blurred and further down */
+  to { opacity: 1; transform: translateY(0); filter: blur(0); } /* End clear and in position */
+}
+ 
+ 
+/* --- Responsive adjustments for DashboardStatsCard --- */
+ 
+@media (max-width: 992px) {
+  .dashboard-stats-card {
+    padding: 25px; /* Slightly reduced padding */
+    flex-direction: column;
+    text-align: center;
+    gap: 20px; /* Adjusted gap for stacked layout */
+  }
+  .dashboard-stats-card-icon {
+    font-size: 3.8em; /* Adjusted icon size */
+    padding: 12px; /* Adjusted padding */
+  }
+  .dashboard-stats-card-title {
+    font-size: 1.05em;
+    margin-bottom: 6px;
+  }
+  .dashboard-stats-card-count {
+    font-size: 3.4em; /* Adjusted count size */
+    letter-spacing: -1.5px;
+  }
+}
+ 
+@media (max-width: 768px) {
+  .dashboard-stats-card {
+    min-width: unset; /* Allow cards to shrink more on smaller screens */
+    width: 100%; /* Take full width within the grid column */
+  }
+  .dashboard-stats-card-icon {
+    font-size: 3.5em;
+  }
+  .dashboard-stats-card-count {
+    font-size: 3em;
+  }
+}
+ 
+@media (max-width: 480px) {
+  /* This rule applies to the grid containing the cards. */
+  /* Ensure your .dashboard-stats-grid also handles this for stacking. */
+  /* .dashboard-stats-grid { */
+  /* grid-template-columns: 1fr; */
+  /* } */
+  .dashboard-stats-card {
+    padding: 20px;
+    gap: 15px;
+  }
+  .dashboard-stats-card-icon {
+    font-size: 3em;
+    padding: 10px;
+  }
+  .dashboard-stats-card-count {
+    font-size: 2.5em;
+  }
+  .dashboard-stats-card-title {
+    font-size: 0.95em;
+  }
+}
+ 

@@ -1,0 +1,260 @@
+/* BookUpload.css - Professional Styling */
+ 
+/* Base Container */
+.submit-review-container {
+  width: 90%;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 80vh;
+  border: 1px solid #e6f3ff;
+}
+ 
+/* Header Styles */
+.submit-review-container h2 {
+  color: #1e3a8a;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+  font-weight: 700;
+  padding-bottom: 1rem;
+  position: relative;
+}
+
+.submit-review-container h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 2px;
+}
+ 
+/* Form Grid Layout */
+form {
+  display: grid;
+  grid-template-areas:
+    "book book"
+    "input1 input2"
+    "input3 input3"
+    "subject subject"
+    "description description"
+    "file file"
+    "submit submit";
+  gap: 1.5rem;
+  flex-grow: 1;
+  padding: 0 1rem;
+}
+ 
+/* Grid Area Assignments */
+.book-select { 
+  grid-area: book;
+  margin-bottom: 0.5rem;
+}
+
+.input-1 { grid-area: input1; }
+.input-2 { grid-area: input2; }
+.input-3 { grid-area: input3; }
+.subject-field { grid-area: subject; }
+.description-field { grid-area: description; }
+.file-upload { grid-area: file; }
+.submit-btn { grid-area: submit; }
+ 
+/* Form Elements */
+label {
+  display: block;
+  font-weight: 600;
+  color: #1e3a8a;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+ 
+/* Input Styles */
+.submit-review-container select,
+.submit-review-container input[type="text"],
+.submit-review-container textarea,
+.submit-review-container input[type="file"] {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  border: 1px solid #e6f3ff;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  background-color: #f8fafc;
+  color: #334155;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+
+.submit-review-container select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231e3a8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+}
+ 
+select:focus,
+input[type="text"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: #ffffff;
+}
+ 
+/* Textarea Styling */
+textarea {
+  resize: vertical;
+  min-height: 150px;
+  line-height: 1.6;
+}
+ 
+/* File Input Styling */
+input[type="file"] {
+  padding: 1rem;
+  border: 2px dashed #e6f3ff;
+  background-color: #f8fafc;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+input[type="file"]:hover {
+  border-color: #3b82f6;
+  background-color: #f0f7ff;
+}
+ 
+/* Submit Button */
+button[type="submit"] {
+  padding: 1rem 2rem;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+ 
+button[type="submit"]:hover {
+  background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+ 
+/* Success Message */
+.success {
+  padding: 1rem 1.5rem;
+  background: linear-gradient(90deg, #34a853 0%, #2e8b47 100%);
+  color: white;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(52, 168, 83, 0.2);
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+ 
+/* Book Title Card */
+.bookx-card-title {
+  max-width: 100%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.6;
+  font-size: 1.1rem;
+  color: #1e3a8a;
+  font-weight: 500;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e6f3ff;
+  margin-bottom: 1rem;
+}
+ 
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .submit-review-container {
+    width: 90%;
+    padding: 1.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .submit-review-container {
+    width: 95%;
+    padding: 1.5rem;
+    margin: 1rem auto;
+  }
+ 
+  form {
+    grid-template-areas:
+      "book"
+      "input1"
+      "input2"
+      "input3"
+      "subject"
+      "description"
+      "file"
+      "submit";
+    gap: 1.25rem;
+    padding: 0;
+  }
+
+  .submit-review-container h2 {
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  button[type="submit"] {
+    width: 100%;
+    padding: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .submit-review-container {
+    padding: 1.25rem;
+  }
+
+  .submit-review-container h2 {
+    font-size: 1.5rem;
+  }
+
+  label {
+    font-size: 0.9rem;
+  }
+
+  .submit-review-container select,
+  .submit-review-container input[type="text"],
+  .submit-review-container textarea,
+  .submit-review-container input[type="file"] {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+}

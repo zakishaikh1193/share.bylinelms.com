@@ -1,0 +1,122 @@
+/* 🔲 Modal Overlay */
+.add-subject-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(243, 242, 242, 0.5);
+  backdrop-filter: blur(1px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* 🧩 Modal Box Container */
+.add-subject-modal-content {
+  background-color: #ffffff;
+  padding: 2rem 2.5rem;
+  border-radius: 14px;
+  width: 92%;
+  max-width: 440px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  position: relative;
+  font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
+  transition: all 0.3s ease;
+}
+
+/* 🧾 Modal Heading */
+.add-subject-modal-content h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1e293b;
+  text-align: center;
+}
+
+/* ❌ Close Button */
+.close-btn {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background-color: #f1f5f9;
+  color: #1f2937;
+}
+
+/* 🧮 Modal Form */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ✏️ Input & Select */
+.modal-form input,
+.modal-form select {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background-color: #f9fafb;
+  color: #1f2937;
+  transition: all 0.2s ease;
+}
+
+.modal-form input:focus,
+.modal-form select:focus {
+  outline: none;
+  background-color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* 🎯 Submit Button Group */
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* ✅ Submit Button Only */
+.btn-primary {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  min-width: 120px;
+  background-color: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.3);
+}
+
+/* 🚨 Error Message */
+.error-message {
+  color: #dc2626;
+  font-size: 0.9rem;
+  margin-top: -0.4rem;
+  text-align: center;
+}

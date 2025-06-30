@@ -1,0 +1,130 @@
+.size-value {
+  font-weight: 500;
+  color: #1e3a8a;
+  min-width: 80px;
+  text-align: center;
+}
+
+.book-image-container {
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+/* --- Styles for search bar in BooksList --- */
+.content-header-with-search {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* Allows items to stack on small screens */
+  gap: 1rem;
+  /* Reset the original heading's bottom margin */
+  margin-bottom: 1.5rem; 
+}
+
+.content-header-with-search .content-heading {
+  margin-bottom: 0;
+  text-align: left; /* Align heading to the left */
+}
+.content-header-with-search .content-heading::after {
+  left: 0; /* Align underline with new text alignment */
+  transform: translateX(0);
+}
+
+.filter-search-bar {
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  border: 1px solid #d1d5db; /* A neutral border color */
+  border-radius: 8px;
+  width: 100%;
+  max-width: 320px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: #f8fafc;
+}
+
+.filter-search-bar:focus-visible,
+.filter-search-bar:focus {
+  outline: none;
+  border-color: #3b82f6; /* Light blue focus */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background-color: #fff;
+}
+
+/* --- Responsive adjustment for the new header --- */
+@media (max-width: 768px) {
+  .content-header-with-search {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .filter-search-bar {
+    max-width: 100%; /* Full width on mobile */
+  }
+}
+ 
+/* ============================================== */
+/* ===         ISSUED BOOK PAGE STYLES        === */
+ 
+.book-card-issued-button:active {
+  transform: translateY(0);
+}
+
+/* ============================================== */
+/* ===         BOOK DETAIL TAGS STYLES        === */
+/* ============================================== */
+
+.book-details-tags-container {
+  margin-top: 2rem;
+  background: #fafbff; /* Consistent with the spec table */
+  border-radius: 0.7rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  border: 1px solid #e0e7ff;
+}
+
+.book-details-tags-container .section-heading {
+  margin: 0;
+}
+
+.book-details-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem; /* Spacing between tags */
+  padding: 1.25rem;
+}
+
+.book-details-tags p {
+  margin: 0;
+  font-style: italic;
+  color: #64748b;
+}
+
+.book-detail-tag {
+  padding: 6px 14px;
+  border-radius: 16px; /* Pill shape */
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.book-detail-tag:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* Aesthetic Color Palette for Detail Tags */
+.book-detail-tag:nth-child(5n + 1) { background-color: #e0f2fe; color: #0c5999; } /* Light Blue */
+.book-detail-tag:nth-child(5n + 2) { background-color: #dcfce7; color: #166534; } /* Light Green */
+.book-detail-tag:nth-child(5n + 3) { background-color: #f3e8ff; color: #581c87; } /* Light Purple */
+.book-detail-tag:nth-child(5n + 4) { background-color: #fff7ed; color: #9a3412; } /* Light Orange */
+.book-detail-tag:nth-child(5n + 5) { background-color: #fce7f3; color: #9d266b; } /* Light Pink */
+
+.issued-books-grid, .books-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 2.2rem;
+  align-items: flex-start;
+}
+ 

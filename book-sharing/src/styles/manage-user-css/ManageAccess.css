@@ -1,0 +1,931 @@
+/* 🌐 Universal Base Styles */
+.unassigned-books-with-filters {
+  display: flex;
+  gap: 20px; /* spacing between sidebar and book list */
+}
+
+.custom-filter-sidebar {
+  flex: 0 0 250px; /* fixed width sidebar */
+  max-width: 250px;
+  border-right: 1px solid #ccc;
+  padding-right: 15px;
+  box-sizing: border-box;
+}
+
+.unassigned-books-container {
+  flex: 1; /* take remaining space */
+  min-width: 0; /* prevents overflow */
+}
+
+body, input, select, button {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1e293b;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 📋 Manage Access Container */
+.manage-access-container {
+  max-width: 100rem;
+  padding: 40px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+}
+
+.manage-access-container:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* 📜 Headings */
+.manage-access-container h1,
+.unassigned-books-list h2 {
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.manage-access-container h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 28px;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.unassigned-books-list h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 🔍 User Dropdown */
+.user-select {
+  margin-bottom: 32px;
+  max-width: 480px;
+}
+
+.user-select label {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+.user-select-dropdown {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15px;
+  border: 1px solid #bfdbfe; /* Light blue border */
+  border-radius: 8px;
+  background-color: #fefefe;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.user-select-dropdown:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  background-color: #eff6ff; /* Light blue focus */
+  outline: none;
+  transform: scale(1.01);
+}
+
+/* 🗃️ Assigned Books Table */
+.assigned-books-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 32px 0;
+  font-size: 14px;
+  color: #334155;
+  font-weight: 500;
+  background-color: #fff;
+  border: 1px solid #e0e7ff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.assigned-books-table th,
+.assigned-books-table td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid #e0e7ff;
+  vertical-align: middle;
+}
+
+.assigned-books-table th {
+  background: linear-gradient(90deg, #dbeafe 0%, #bfdbfe 100%); /* Light blue gradient */
+  font-weight: 600;
+  color: #1e40af;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+}
+
+.assigned-books-table tr:last-child td {
+  border-bottom: none;
+}
+
+.assigned-books-table tbody tr {
+  transition: all 0.3s ease;
+}
+
+.assigned-books-table tbody tr:hover {
+  background-color: #eff6ff; /* Light blue hover */
+  transform: scale(1.005);
+}
+
+/* 📚 Book Cards */
+.unassigned-books-container {
+  margin-top: 32px;
+}
+
+.book-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+  margin: 24px 0;
+  max-height: 700px;
+  overflow:auto;
+  background-color: #e2e2e2;
+  padding: 20px;
+}
+
+.book-card {
+  position: relative;
+  border: 1px solid #e0e7ff;
+  border-radius: 10px;
+  padding: 16px;
+  background-color: #fff;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+}
+
+.book-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.book-card.selected {
+  border: 2px solid #12b912; /* Green for selected state */
+  background-color: #f0fdf4;
+  box-shadow: 0 0 12px rgba(18, 185, 18, 0.3);
+}
+
+.book-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e7ff;
+}
+
+.book-card-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: break-word;
+}
+
+.book-card-body {
+  font-size: 14px;
+  color: #334155;
+}
+
+.book-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.meta-label {
+  font-weight: 600;
+  color: #4b5563;
+}
+
+/* 🔘 Buttons */
+.btn-save,
+.btn-assign {
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 12px 24px;
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  color: #fff;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-save {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%); /* Light blue gradient */
+}
+
+.btn-save:hover:not(:disabled) {
+  background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-assign {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  min-width: 160px;
+}
+
+.btn-assign:hover:not(:disabled) {
+  background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-assign:disabled {
+  background: #d1d5db;
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ✅ Checkbox + List */
+.book-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border-radius: 10px;
+  border: 1px solid #bfdbfe;
+  padding: 16px;
+  margin-bottom: 20px;
+  background-color: #fff;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
+  list-style: none;
+}
+
+.book-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.book-list::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 10px;
+}
+
+.book-list::-webkit-scrollbar-thumb {
+  background-color: #94a3b8;
+  border-radius: 10px;
+  border: 2px solid #f3f4f6;
+}
+
+.book-list li {
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  color: #334155;
+}
+
+.book-list li:hover {
+  background-color: #eff6ff; /* Light blue hover */
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  color: #334155;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1.5px solid #94a3b8;
+  background-color: #fff;
+  appearance: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+  background-color: #3b82f6;
+  border-color: #2563eb;
+}
+
+.checkbox-label input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  width: 4px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* 🎉 Success Popup */
+/* 🎯 Success Popup Overlay - Full Screen Sticky */
+.success-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(3px);
+  animation: fadeInOverlay 0.4s ease-out;
+  overflow: hidden; /* Prevent inner scroll */
+}
+
+/* ✅ Popup stays centered, not scrollable */
+.success-popup {
+  position: relative;
+  background: #fff;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  animation: popIn 0.4s ease-out;
+  border: 1px solid #e0e7ff;
+}
+
+.popup-icon {
+  font-size: 32px;
+  color: #16a34a;
+  margin-right: 16px;
+}
+
+.popup-message {
+  font-size: 16px;
+  color: #0f172a;
+  flex-grow: 1;
+}
+
+.popup-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #64748b;
+  padding: 4px;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+
+.popup-close:hover {
+  color: #3b82f6;
+  transform: scale(1.1);
+}
+
+
+/* 🔽 Select Button */
+.select-btn {
+  border: none;
+  background: #e2e8f0;
+  color: #1e293b;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.select-btn:hover {
+  background: #dbeafe; /* Light blue hover */
+  transform: translateY(-1px);
+}
+
+.select-btn.selected {
+  background: #16a34a; /* Green for selected */
+  color: #fff;
+}
+
+/* 📚 Book Card */
+.book-card {
+  border: 1px solid #e0e7ff;
+  border-radius: 10px;
+  padding: 16px;
+  margin: 0;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.book-card.selected {
+  border: 2px solid #16a34a; /* Green for selected */
+  box-shadow: 0 0 12px rgba(18, 185, 18, 0.3);
+  background-color: #f0fdf4;
+}
+
+.book-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.book-card-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #0f172a;
+  text-align: left;
+  flex-grow: 1;
+  word-break: break-word;
+}
+
+/* 🔍 Filter Bar */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.filter-box {
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  border: 1px solid #bfdbfe; /* Light blue border */
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 200px;
+  transition: all 0.3s ease;
+}
+
+.filter-box:hover {
+  background: #eff6ff; /* Light blue hover */
+  transform: translateY(-2px);
+}
+
+.filter-box label {
+  font-size: 14px;
+  color: #334155;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.filter-box select {
+  padding: 8px;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.filter-box select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  background: #eff6ff; /* Light blue focus */
+  outline: none;
+}
+
+/* 📱 Responsive Design */
+@media (max-width: 1024px) {
+  .manage-access-container {
+    padding: 32px;
+    margin: 24px;
+  }
+
+  .book-cards-container {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .manage-access-container {
+    padding: 24px;
+    margin: 16px;
+  }
+
+  .assigned-books-table {
+    display: block;
+    overflow-x: auto;
+    min-width: 600px;
+  }
+
+  .unassigned-books-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .btn-assign,
+  .btn-save {
+    width: 100%;
+    padding: 12px;
+    min-width: unset;
+  }
+
+  .user-select {
+    max-width: 100%;
+  }
+
+  .assigned-books-table th,
+  .assigned-books-table td {
+    font-size: 13px;
+    padding: 12px;
+  }
+
+  .book-list {
+    max-height: 240px;
+  }
+}
+
+@media (max-width: 480px) {
+  .manage-access-container {
+    padding: 16px;
+    margin: 12px;
+  }
+
+  .manage-access-container h1 {
+    font-size: 24px;
+  }
+
+  .unassigned-books-list h2 {
+    font-size: 20px;
+  }
+
+  .book-card-header h3 {
+    font-size: 14px;
+  }
+
+  .filter-box {
+    min-width: 100%;
+  }
+}
+/* --- General Page Styles --- */
+.manage-access-container {
+  padding: 24px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+}
+
+.manage-access-container h1 {
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px;
+  margin: 0 0 20px 0;
+}
+
+/* --- Assigned Books Table --- */
+.assigned-books-table {
+  width: 100%;
+  border-collapse: collapse;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.assigned-books-table th,
+.assigned-books-table td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 12px 15px;
+  text-align: left;
+}
+
+.assigned-books-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ... other table styles ... */
+.assigned-books-table .center-text { text-align: center; }
+.btn-save { background-color: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
+.btn-save:hover { background-color: #1d4ed8; }
+
+/* --- Filters & Unassigned Books Layout --- */
+.unassigned-books-with-filters {
+  display: flex;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+/* --- Filter Sidebar Styles --- */
+.custom-filter-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  /* Add scrolling to sidebar itself if it becomes too long */
+  max-height: 80vh; 
+  overflow-y: auto;
+  position: sticky;
+  top: 20px;
+}
+.filter-box { border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; padding: 10px 16px; margin-bottom: 16px; }
+.filter-title { font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+.filter-options label { display: block; padding: 4px 0; cursor: pointer; }
+
+/* --- Unassigned Books Container (Right Side) --- */
+.unassigned-books-container {
+  flex-grow: 1; /* Take up the rest of the horizontal space */
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.unassigned-books-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8f9fa;
+  position: sticky; /* Keep header visible if the main page scrolls */
+  top: 0;
+  z-index: 10;
+}
+.unassigned-books-header h2 { margin: 0; }
+.btn-assign { background-color: #16a34a; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: 600; cursor: pointer; }
+.btn-assign:disabled { background-color: #ccc; cursor: not-allowed; }
+
+/* 
+  ==============================================================
+  >>> THIS IS THE SECTION THAT CREATES THE SCROLLING EFFECT <<<
+  ==============================================================
+*/
+.book-cards-scroll-wrapper {
+  /* Set a maximum height. The scrollbar will appear when content exceeds this.
+     You can adjust this value (e.g., 70vh, 800px) to your liking. */
+  max-height: 70vh;
+
+  /* This is the key: creates a vertical scrollbar only when needed. */
+  overflow-y: auto;
+  
+  /* Styling for the container */
+  padding: 24px;
+  background-color: #f9fafb; /* Light gray background to distinguish the scroll area */
+}
+
+/* Style the scrollbar for a better look (optional but recommended) */
+.book-cards-scroll-wrapper::-webkit-scrollbar {
+  width: 10px;
+}
+.book-cards-scroll-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+.book-cards-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #a8a8a8;
+  border-radius: 10px;
+}
+.book-cards-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Simple scrollbar for Firefox */
+.book-cards-scroll-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: #a8a8a8 #f1f1f1;
+}
+
+.book-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+/* --- Unassigned Book Card --- */
+.unassigned-books-container .book-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.unassigned-books-container .book-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.unassigned-books-container .book-card.selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(30, 114, 65, 0.4);
+  background-color: #f7fff9;
+}
+/* --- Style the header for the search bar --- */
+.unassigned-books-header {
+  gap: 16px; /* Adds space between title, search, and button */
+  flex-wrap: wrap; /* Allows items to wrap on smaller screens if needed */
+}
+
+.unassigned-books-header h2 {
+  margin: 0;
+  flex-shrink: 0; /* Prevents the title from being squished */
+}
+
+/* --- Style the new search input --- */
+.book-search-input {
+  flex-grow: 1; /* Allows the search bar to fill the available space */
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  outline: none;
+  min-width: 200px; /* Ensures it doesn't get too small */
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.book-search-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+/* --- New styles for the Assigned Books Section Header --- */
+.assigned-books-section {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background-color: #fff;
+  overflow: hidden; /* Important for containing the table's corners */
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.assigned-books-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.assigned-books-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1e293b;
+}
+
+.btn-save-all {
+  background-color: #16a34a; /* A positive, save-action color */
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-save-all:hover {
+  background-color: #15803d;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* --- Modify existing table styles to remove extra margin/shadow --- */
+.assigned-books-table {
+  margin-bottom: 0;
+  box-shadow: none;
+  border-radius: 0;
+  border: none; /* The wrapper has the border now */
+}
+
+.assigned-books-count {
+  display: flex;
+  align-items: center;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #2563eb;
+  margin-left: 18px;
+  margin-right: 18px;
+  background: #e0e7ff;
+  border-radius: 8px;
+  padding: 6px 16px 6px 10px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.07);
+}
+
+.assigned-books-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.assigned-books-total {
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-left: 2px;
+}
+
+/* --- Styles for Download Header in Assigned Books Table --- */
+.download-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-select-all {
+  border: none;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+  background-color: #3b82f6; /* Blue for "Select All" */
+}
+
+.btn-select-all:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-select-all.active {
+  background-color: #6b7280; /* Gray for "Unselect All" */
+}
+
+.btn-select-all.active:hover {
+    background-color: #4b5563;
+}
+/* --- Flex container for the user dropdown and stats box --- */
+.user-select-stats-row {
+  display: flex;
+  align-items: flex-end; /* Aligns dropdown and stats box along their bottom edge */
+  gap: 32px;
+  margin-bottom: 32px;
+  justify-content: space-between;
+}
+
+/* --- Assigned Books Stats Box --- */
+.assigned-books-stats {
+  min-width: 220px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.08);
+  border: 1px solid #e0e7ff;
+  padding: 18px 28px 18px 18px;
+  display: flex;
+  align-items: center;
+  transition: box-shadow 0.2s;
+  flex-shrink: 0; /* Prevents the box from shrinking */
+}
+
+/* --- Icon inside the stats box --- */
+.assigned-books-stats .dashboard-stats-card-icon {
+  font-size: 2.2rem;
+  color: #2563eb;
+  margin-right: 18px;
+}
+
+/* --- User name / title styling --- */
+.assigned-books-stats .dashboard-stats-card-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+/* --- The large number count --- */
+.assigned-books-stats .dashboard-stats-card-count {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #2563eb;
+  min-height: 40px; /* Ensures consistent height during loading */
+  display: flex;
+  align-items: center;
+}
+
+
+/* --- Responsive styles for smaller screens --- */
+@media (max-width: 700px) {
+  .user-select-stats-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+  }
+  .assigned-books-stats {
+    width: 100%;
+    min-width: 0;
+    padding: 16px 12px;
+  }
+  .assigned-books-stats .dashboard-stats-card-count {
+    font-size: 1.6rem;
+  }
+}

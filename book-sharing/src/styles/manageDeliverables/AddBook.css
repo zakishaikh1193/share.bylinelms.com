@@ -1,0 +1,484 @@
+/* 🌐 Root Form Container */
+.enhanced-book-form {
+  background: #ffffff;
+  padding: 1.5rem 2rem;
+  margin: 1.5rem auto;
+  width: 90rem;
+  border-radius: 12px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e6f3ff;
+}
+ 
+.enhanced-book-form:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.12);
+}
+ 
+/* 🔙 Back Button */
+.form-back-btn {
+  height: 36px;
+  background: linear-gradient(90deg, #3b82f6 0%, #527ad1 100%);
+  color: #ffffff;
+  padding: 0 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  align-self: flex-start;
+}
+ 
+.form-back-btn:hover {
+  background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+}
+ 
+.form-back-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+ 
+.form-back-btn svg {
+  width: 14px;
+  height: 14px;
+}
+ 
+/* 📜 Form Title */
+.enhanced-book-form h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #1e3a8a;
+  text-align: center;
+  user-select: none;
+  letter-spacing: -0.02em;
+  animation: fadeIn 0.4s ease-out;
+  position: relative;
+}
+ 
+.enhanced-book-form h2::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 2px;
+}
+ 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+ 
+/* 📏 Grid Layout */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+ 
+.form-grid > .full-width {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+ 
+.form-grid > .full-width input,
+.form-grid > .full-width textarea {
+  width: 100%;
+}
+ 
+/* 🔤 Label Block */
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  color: #1e3a8a;
+  letter-spacing: 0.01em;
+  width: 100%;
+}
+ 
+/* 📝 Input, Select, Textarea */
+.form-grid input[type="text"],
+.form-grid input[type="number"],
+.form-grid input[type="file"],
+.form-grid select,
+.form-grid textarea {
+  width: 100%;
+  height: 42px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #1e293b;
+  background-color: #f8fafc;
+  border: 1px solid #e6f3ff;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(59, 130, 246, 0.05);
+  box-sizing: border-box;
+}
+ 
+.form-grid input:focus,
+.form-grid select:focus,
+.form-grid textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+  background-color: #ffffff;
+}
+ 
+.form-grid textarea {
+  height: auto;
+  min-height: 120px;
+  resize: vertical;
+}
+ 
+.form-grid input[type="file"] {
+  padding: 8px;
+  height: auto;
+  background-color: #f1f5f9;
+  cursor: pointer;
+}
+ 
+/* 🔘 Button Area */
+.form-actions {
+  margin-top: auto;
+  padding-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  border-top: 1px solid #e6f3ff;
+}
+ 
+/* ✅ Submit Button */
+.form-actions button {
+  min-width: 140px;
+  height: 42px;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  border: none;
+  padding: 0 24px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+ 
+.form-actions button:hover:not(:disabled) {
+  background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+}
+ 
+.form-actions button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+ 
+/* 🚫 Disabled Submit Button */
+button[disabled] {
+  background: #d1d5db;
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+  transform: none;
+}
+ 
+/* 🔽 Multi-Select Styling */
+.multi-select {
+  height: auto;
+  min-height: 120px;
+  background-color: #f8fafc;
+  border: 1px solid #e6f3ff;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 15px;
+  color: #1e293b;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+}
+ 
+.multi-select option {
+  padding: 10px;
+  transition: background 0.2s ease;
+}
+ 
+.multi-select option:hover {
+  background: #e6f3ff;
+}
+ 
+/* 📊 Upload Progress Section */
+.upload-progress-section {
+  margin-top: 20px;
+  padding: 14px;
+  border: 1px solid #e6f3ff;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  transition: all 0.3s ease;
+}
+ 
+.upload-progress-section:hover {
+  background: #e6f3ff;
+}
+ 
+.upload-progress-section > div {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #334155;
+}
+ 
+.upload-progress-section progress {
+  width: 100%;
+  height: 12px;
+  margin-top: 6px;
+  appearance: none;
+}
+ 
+.upload-progress-section progress::-webkit-progress-bar {
+  background-color: #e6f3ff;
+  border-radius: 6px;
+}
+ 
+.upload-progress-section progress::-webkit-progress-value {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 6px;
+}
+ 
+.upload-progress-section progress::-moz-progress-bar {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 6px;
+}
+ 
+/* 🎉 Success Message */
+.success-message {
+  margin-top: 20px;
+  padding: 10px 18px;
+  background-color: #f0f7ff;
+  border: 1px solid #bfdbfe;
+  border-left: 5px solid #3b82f6;
+  color: #1e3a8a;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 6px;
+  animation: fadeIn 0.5s ease-in-out;
+}
+ 
+/* 📱 Responsive Design */
+@media (max-width: 1024px) {
+  .enhanced-book-form {
+    width: 100%;
+    padding: 1.25rem;
+  }
+ 
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+ 
+@media (max-width: 768px) {
+  .enhanced-book-form {
+    padding: 1rem;
+    margin: 1rem;
+  }
+ 
+  .enhanced-book-form h2 {
+    font-size: 24px;
+  }
+ 
+  .form-actions {
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 1.5rem;
+  }
+ 
+  .form-actions button {
+    width: 100%;
+  }
+ 
+  .form-back-btn {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+ 
+  .multi-select {
+    min-height: 100px;
+  }
+}
+ 
+@media (max-width: 480px) {
+  .enhanced-book-form {
+    padding: 0.8rem;
+  }
+ 
+  .enhanced-book-form h2 {
+    font-size: 20px;
+  }
+ 
+  .form-grid label {
+    font-size: 13px;
+  }
+ 
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea,
+  .multi-select {
+    font-size: 14px;
+  }
+}
+ 
+/* Error Message Styling */
+.error-message {
+  font-size: 12px;
+  color: #dc2626;
+  margin-top: 4px;
+  padding: 4px 8px;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 4px;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 1.2;
+}
+ /* src/styles/TagInput.css */
+
+/* The main container for the entire tag input component */
+.tag-input-container {
+  background-color: #ffffff;
+  border: 1px solid #ced4da; /* A standard, neutral border color */
+  border-radius: 6px;
+  padding: 8px 12px;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Add a blue outline when the container or any of its children are focused */
+.tag-input-container:focus-within {
+  border-color: #6495ed;
+  box-shadow: 0 0 0 3px rgba(100, 149, 237, 0.25);
+}
+
+/* Wrapper for the text input and the 'Add' button */
+.tag-input-field-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Space between input and button */
+}
+
+/* The actual text input field */
+.tag-input-field {
+  flex-grow: 1; /* Allows the input to take up available space */
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1rem;
+  padding: 4px 0;
+  width: 100%;
+}
+
+/* The '+ Add' button next to the input */
+.tag-input-add-btn {
+  background-color: #6495ed;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  flex-shrink: 0; /* Prevents the button from shrinking */
+}
+
+.tag-input-add-btn:hover {
+  background-color: #507ec2; /* A darker shade on hover */
+}
+
+/* The dropdown list for tag suggestions */
+.tag-suggestions-list {
+  max-height: 120px;
+  overflow-y: auto;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  margin-top: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* A single item within the suggestions list */
+.tag-suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.tag-suggestion-item:hover {
+  background-color: #f1f3f5; /* Light grey background on hover */
+}
+
+/* The container for all the selected tags (pills) */
+.selected-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px; /* Space between each tag pill */
+  margin-top: 12px; /* Space above the selected tags */
+}
+
+/* An individual selected tag pill */
+.selected-tag-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #eaf2ff; /* A light blue background */
+  color: #004aad; /* A darker blue for text */
+  border: 1px solid #b3d1ff;
+  border-radius: 16px; /* Makes it a pill shape */
+  padding: 4px 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* The 'x' button to remove a tag */
+.remove-tag-btn {
+  cursor: pointer;
+  font-weight: 700;
+  color: #6495ed;
+  transition: transform 0.1s ease, color 0.2s ease;
+}
+
+.remove-tag-btn:hover {
+  color: #d9534f; /* Change to red on hover for a clear delete action */
+  transform: scale(1.2);
+}
+
+/* Style for the main form label */
+.full-width {
+  display: block;
+  width: 100%;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: #333;
+}

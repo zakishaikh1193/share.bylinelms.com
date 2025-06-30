@@ -1,0 +1,316 @@
+.admin-review-list {
+  padding: 1.5rem;
+width: 100%;
+  margin: auto;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
+  border: 1px solid #e6f3ff;
+}
+
+.review-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #e6f3ff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.review-table th,
+.review-table td {
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #e6f3ff;
+  text-align: left;
+  font-size: 0.95rem;
+  color: #334155;
+}
+
+.review-table th {
+  background: linear-gradient(135deg, #e6f3ff 0%, #cce5ff 100%);
+  color: #1e3a8a;
+  font-weight: 600;
+  border-bottom: 2px solid #e6f3ff;
+}
+
+.review-table tbody tr {
+  transition: all 0.3s ease;
+}
+
+.review-table tbody tr:hover {
+  background: #f0f7ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+}
+
+.review-table button {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 120px;
+}
+
+.review-table button:hover {
+  background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+}
+
+/* 🌐 Client Input Wrapper */
+.client-input-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: #f8fafc;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 1rem 2rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin-top: -1rem;
+}
+ 
+/* 📦 Client Input Container */
+.client-input-container {
+  background: #ffffff;
+  padding: 1.5rem 2.5rem;
+  width: 100%;
+  max-width: 95%;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
+  overflow-x: auto;
+  overflow-y: auto;
+  min-height: fit-content;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  border: 1px solid #e6f3ff;
+  margin-top: -0.5rem;
+}
+ 
+.client-input-container:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.12);
+}
+ 
+/* 📜 Heading */
+.client-input-container h2 {
+  font-weight: 700;
+  text-align: center;
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+  color: #1e3a8a;
+  letter-spacing: -0.02em;
+  position: relative;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.client-input-container h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 2px;
+}
+ 
+/* 🗃️ Client Input Table */
+.client-input-table {
+  width: 100%;
+  min-width: 800px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.95rem;
+  background: transparent;
+  table-layout: auto;
+  color: #334155;
+  border: 1px solid #e6f3ff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+ 
+/* 📑 Table Header */
+.client-input-table thead {
+  background: linear-gradient(135deg, #e6f3ff 0%, #cce5ff 100%);
+}
+ 
+.client-input-table th {
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+  font-weight: 600;
+  color: #1e3a8a;
+  white-space: nowrap;
+  border-bottom: 2px solid #e6f3ff;
+  user-select: none;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+  font-size: 0.95rem;
+}
+ 
+/* 📋 Table Cells */
+.client-input-table td {
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+  border-bottom: 1px solid #e6f3ff;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background-color: #ffffff;
+  transition: all 0.3s ease;
+}
+ 
+/* 📋 Table Rows */
+.client-input-table tbody tr {
+  transition: all 0.3s ease;
+}
+ 
+.client-input-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+ 
+.client-input-table tbody tr:hover {
+  background: #f0f7ff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+}
+
+.client-input-table tbody tr:hover td {
+  background: #f0f7ff;
+}
+ 
+/* 🔗 Download Link */
+.download-link {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: #f0f7ff;
+}
+ 
+.download-link:hover {
+  color: #2563eb;
+  background: #e6f3ff;
+  transform: translateY(-1px);
+}
+ 
+/* 📂 File Input */
+input[type="file"] {
+  font-size: 0.95rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e6f3ff;
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: 300px;
+}
+ 
+input[type="file"]:hover {
+  border-color: #3b82f6;
+  background: #f0f7ff;
+  transform: translateY(-1px);
+}
+
+input[type="file"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+ 
+/* 📱 Responsive Adjustments */
+@media (max-width: 1024px) {
+  .client-input-wrapper {
+    padding: 1.5rem;
+  }
+ 
+  .client-input-container {
+    padding: 2rem;
+  }
+ 
+  .client-input-table th,
+  .client-input-table td {
+    padding: 1rem 1.25rem;
+  }
+ 
+  .client-input-container h2 {
+    font-size: 1.75rem;
+  }
+}
+ 
+@media (max-width: 768px) {
+  .client-input-wrapper {
+    padding: 1rem;
+  }
+ 
+  .client-input-container {
+    padding: 1.5rem;
+  }
+ 
+  .client-input-table {
+    min-width: 700px;
+  }
+ 
+  .client-input-table th,
+  .client-input-table td {
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
+  }
+ 
+  .client-input-container h2 {
+    font-size: 1.5rem;
+  }
+ 
+  input[type="file"] {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.9rem;
+  }
+}
+ 
+@media (max-width: 480px) {
+  .client-input-wrapper {
+    padding: 0.75rem;
+  }
+ 
+  .client-input-container {
+    padding: 1.25rem;
+  }
+ 
+  .client-input-table {
+    min-width: 600px;
+  }
+ 
+  .client-input-table th,
+  .client-input-table td {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+ 
+  .client-input-container h2 {
+    font-size: 1.25rem;
+  }
+ 
+  .download-link,
+  input[type="file"] {
+    font-size: 0.875rem;
+  }
+}

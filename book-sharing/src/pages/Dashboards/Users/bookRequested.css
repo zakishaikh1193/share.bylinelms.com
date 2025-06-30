@@ -1,0 +1,91 @@
+.requested-books-container {
+  padding: 40px;
+  background-color: #f8f9fc;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.requested-books-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 30px;
+  color: #2c3e50;
+  text-align: center;
+}
+
+.requested-books-table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  background: #fff;
+}
+
+.requested-books-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.requested-books-table th,
+.requested-books-table td {
+  padding: 16px 20px;
+  text-align: left;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+.requested-books-table th {
+  background-color: #007bff;
+  color: white;
+  font-weight: 600;
+}
+
+.requested-books-table tr:hover {
+  background-color: #f1f7ff;
+}
+
+.status {
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+  text-align: center;
+  display: inline-block;
+}
+
+.status.pending {
+  background-color: #ffecb3;
+  color: #b28900;
+}
+
+.status.approved {
+  background-color: #d4edda;
+  color: #2e7d32;
+}
+
+.status.rejected {
+  background-color: #f8d7da;
+  color: #c62828;
+}
+
+.download-btn {
+  background-color: #28a745;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.download-btn:hover {
+  background-color: #218838;
+}
+
+.not-available {
+  color: #999;
+  font-style: italic;
+}
+
+.no-data {
+  text-align: center;
+  color: #888;
+  padding: 20px;
+}

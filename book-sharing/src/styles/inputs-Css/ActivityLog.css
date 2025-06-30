@@ -1,0 +1,263 @@
+/* In ActivityLog.css */
+
+.page-wrapper {
+  padding: 2rem;
+  background-color: #f8fafc; /* Kept as a neutral off-white background */
+}
+
+.search-bar-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.search-input-wrapper {
+  flex: 1;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-input {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border: 1px solid #cde3ff;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #2c3e50;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+}
+
+.search-type-select,
+.timezone-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #cde3ff;
+  border-radius: 6px;
+  background-color: #fff;
+  color: #2c3e50;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.search-type-select:focus,
+.timezone-select:focus {
+  outline: none;
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+}
+
+.timezone-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.timezone-label {
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.activity-log-container {
+  max-width: 1500px;
+  margin: auto;
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  /* Blue Theme: Changed black shadow to a subtle blue shadow */
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.1); 
+}
+
+.activity-log-container h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  /* Blue Theme: Changed slate color to a deep blue */
+  color: #1e3a8a;
+}
+
+.table-responsive-wrapper {
+  overflow-x: auto; /* Makes table scrollable on small screens */
+}
+
+.activity-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.activity-table th,
+.activity-table td {
+  padding: 12px 15px;
+  text-align: left;
+  /* Blue Theme: Changed gray border to a light blue border */
+  border-bottom: 1px solid #dbeafe;
+}
+
+.activity-table thead th {
+  /* Blue Theme: Changed light gray background to a very light blue */
+  background-color: #f0f7ff; 
+  font-weight: 600;
+  /* Blue Theme: Changed slate color to a medium blue */
+  color: #1c5b9f;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.8rem;
+}
+
+.activity-table tbody tr:hover {
+  /* Blue Theme: Made hover effect a more noticeable light blue */
+  background-color: #eef6ff;
+}
+
+.activity-table td {
+  /* Blue Theme: Changed slate text color to a dark blue-gray */
+  color: #2c3e50;
+  vertical-align: middle;
+}
+
+/* User Info Styling */
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-weight: 500;
+  /* Blue Theme: Changed dark slate to a primary blue color */
+  color: #0d47a1;
+}
+
+.user-email {
+  font-size: 0.8rem;
+  /* Blue Theme: Changed slate color to a softer blue-gray */
+  color: #5a7b9d;
+}
+
+/* Action Tag Styling */
+.action-tag {
+  display: inline-block;
+  padding: 4px 8px;
+  /* Blue Theme: Using a consistent light blue for the background */
+  background-color: #e3f2fd;
+  /* Blue Theme: Using a consistent primary blue for the text */
+  color: #0d6efd;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* Loading/Error/Empty States */
+.loading-state, .error-state, .empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.error-state {
+  /* UNCHANGED: Error states should remain red for universal understanding */
+  color: #b91c1c;
+}
+
+/* Details Cell */
+.details-cell {
+  max-width: 400px; /* Prevents very long details from stretching the table */
+  white-space: pre-wrap; /* Allows text to wrap */
+  word-break: break-word;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+/* --- PAGINATION STYLES (BLUE THEME) --- */
+
+.pagination-container {
+  display: flex;
+  list-style-type: none;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 1rem 0;
+  margin-top: 10px;
+  gap: 8px;
+}
+
+.pagination-item {
+  padding: 0 12px;
+  height: 32px;
+  text-align: center;
+  margin: auto 4px;
+  /* Blue Theme: Changed black text to a standard blue */
+  color: #0d6efd;
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  letter-spacing: 0.01071em;
+  border-radius: 16px;
+  line-height: 1.43;
+  font-size: 13px;
+  min-width: 32px;
+  cursor: pointer;
+  /* Blue Theme: Changed gray border to a light blue border */
+  border: 1px solid #cde3ff;
+  background-color: #fff; /* Ensure buttons have a background */
+}
+
+.pagination-item:hover {
+  /* Blue Theme: Hover with a light blue background */
+  background-color: #eef6ff;
+}
+
+.pagination-item.dots {
+  cursor: default;
+  border: none;
+  color: #6c757d; /* Dots can remain a neutral gray */
+}
+.pagination-item.dots:hover {
+  background-color: transparent;
+}
+
+.pagination-item.selected {
+  /* Blue Theme: Using a vibrant primary blue for the selected item */
+  background-color: #0d6efd;
+  color: white;
+  border-color: #0d6efd;
+}
+
+.pagination-item.disabled {
+  /* UNCHANGED: Disabled state remains gray for clarity */
+  pointer-events: none;
+  color: #6c757d;
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+.pagination-item.disabled .arrow {
+  border-color: #6c757d;
+}
+
+.arrow {
+  /* Blue Theme: Arrow color matches the button text color */
+  border: solid #0d6efd;
+  border-width: 0 2px 2px 0;
+  display: inline-block;
+  padding: 3px;
+}
+
+.arrow.left {
+  transform: rotate(135deg);
+  -webkit-transform: rotate(135deg);
+}
+
+.arrow.right {
+  transform: rotate(-45deg);
+  -webkit-transform: rotate(-45deg);
+}
