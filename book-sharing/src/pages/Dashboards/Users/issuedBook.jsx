@@ -152,8 +152,8 @@ function GroupedBookCard({ group, onReadBook }) {
         </div>
         <div className="book-card-issued-actions">
           {/* Read Book (digital only) */}
-          {digital && (
-            <button onClick={() => onReadBook(digital.book_id)} className="book-card-issued-button">Read Book</button>
+          {(digital || print) && (
+            <button onClick={() => onReadBook((digital || print).book_id)} className="book-card-issued-button">Read Book</button>
           )}
           {/* Download Digital PDF */}
           {digital && (
@@ -376,8 +376,8 @@ function BookDetail({ group, onGoBack, onReadBook }) {
         {/* Action Buttons */}
         <div className="action-buttons">
           <button onClick={onGoBack} className="btn-go-back" type="button">Go Back</button>
-          {digital && (
-            <button onClick={() => onReadBook(digital.book_id)} className="btn-learn-more">Read Book</button>
+          {(digital || print) && (
+            <button onClick={() => onReadBook((digital || print).book_id)} className="btn-learn-more">Read Book</button>
           )}
           {/* Download PDF Dropdown */}
           <div style={{ position: 'relative', display: 'inline-block' }} ref={pdfBtnRef}>

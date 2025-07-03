@@ -156,7 +156,10 @@ streamBookVersion: async (req, res) => {
       if (!access) return res.status(403).json({ error: "Access denied" });
     }
 
-    const filePath = version.uploaded_link;
+    // Use absolute path for sendFile
+    const filePath = path.isAbsolute(version.uploaded_link)
+      ? version.uploaded_link
+      : path.resolve(__dirname, '..', version.uploaded_link);
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: "File not found" });
@@ -165,11 +168,12 @@ streamBookVersion: async (req, res) => {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
     // --- LOG ACTIVITY ---
-      logActivity(user_id, 'READ_BOOK', { bookId: parseInt(bookId), bookTitle: version.book_title }, ip);
+    logActivity(user_id, 'READ_BOOK', { bookId: parseInt(bookId), bookTitle: version.book_title }, ip);
 
+    // Use sendFile for HTTP range support
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline");
-    fs.createReadStream(filePath).pipe(res);
+    res.sendFile(filePath);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

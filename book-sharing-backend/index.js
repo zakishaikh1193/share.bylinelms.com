@@ -10,6 +10,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.set('trust proxy', true);
 
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*'); // Or set to your frontend origin
+  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Expose-Headers', 'Accept-Ranges, Content-Range, Content-Length');
+  next();
+});
+
 // Routes
 const adminRoutes = require('./routes/adminRoutes');
 const userRoutes = require('./routes/userRoutes');

@@ -3,10 +3,16 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const authenticateAdmin = (req, res, next) => {
+  // Accept token from header or query
+  let token = null;
   const authHeader = req.headers['authorization'];
-  if (!authHeader) return res.status(403).json({ error: 'Missing token' });
+  if (authHeader) {
+    token = authHeader.split(' ')[1];
+  } else if (req.query.token) {
+    token = req.query.token;
+  }
+  if (!token) return res.status(403).json({ error: 'Missing token' });
 
-  const token = authHeader.split(' ')[1];
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err || user.role !== 'admin') return res.status(403).json({ error: 'Forbidden: Admin only' });
     req.user = user;
@@ -15,10 +21,15 @@ const authenticateAdmin = (req, res, next) => {
 };
 
 const authenticateUser = (req, res, next) => {
+  let token = null;
   const authHeader = req.headers['authorization'];
-  if (!authHeader) return res.status(403).json({ error: 'Missing token' });
+  if (authHeader) {
+    token = authHeader.split(' ')[1];
+  } else if (req.query.token) {
+    token = req.query.token;
+  }
+  if (!token) return res.status(403).json({ error: 'Missing token' });
 
-  const token = authHeader.split(' ')[1];
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err || !['viewer', 'contributor', 'reviewer'].includes(user.role)) {
       return res.status(403).json({ error: 'Forbidden: User access only' });
@@ -29,10 +40,15 @@ const authenticateUser = (req, res, next) => {
 };
 
 const authenticateUserOrAdmin = (req, res, next) => {
+  let token = null;
   const authHeader = req.headers['authorization'];
-  if (!authHeader) return res.status(403).json({ error: 'Missing token' });
+  if (authHeader) {
+    token = authHeader.split(' ')[1];
+  } else if (req.query.token) {
+    token = req.query.token;
+  }
+  if (!token) return res.status(403).json({ error: 'Missing token' });
 
-  const token = authHeader.split(' ')[1];
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ error: 'Invalid token' });
     req.user = user;

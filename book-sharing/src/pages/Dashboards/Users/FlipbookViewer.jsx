@@ -24,74 +24,53 @@ function FlipbookViewer({ bookId, onClose }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [pageInput, setPageInput] = useState("1");
   const [bookDimensions, setBookDimensions] = useState({ width: 0, height: 0 });
+  const [numPages, setNumPages] = useState(null);
+  const [loadingBatch, setLoadingBatch] = useState(0);
+  const [pdfDoc, setPdfDoc] = useState(null);
+  const [initialBatchLoaded, setInitialBatchLoaded] = useState(false);
+ 
+  const BATCH_SIZE = 7;
  
   const flipBookRef = useRef();
   const modalContentRef = useRef();
-  const flipSoundRef = useRef(null); // <-- ADD THIS
+  const flipSoundRef = useRef(null);
  
   useEffect(() => {
     flipSoundRef.current = new Audio('/sounds/paper-flip.mp3');
-    flipSoundRef.current.volume = 1; // Set a subtle volume
-}, []);
+    flipSoundRef.current.volume = 1;
+  }, []);
  
-const playFlipSound = () => {
+  const playFlipSound = () => {
     if (flipSoundRef.current) {
-        // Rewind to start and play, allowing rapid flips
-        flipSoundRef.current.currentTime = 0;
-        flipSoundRef.current.play().catch(e => console.error("Audio play failed:", e));
+      flipSoundRef.current.currentTime = 0;
+      flipSoundRef.current.play().catch(e => console.error("Audio play failed:", e));
     }
-};
+  };
  
- 
-  // Fetches PDF and prepares pages
   useEffect(() => {
+    let isMounted = true;
     const fetchPdfAndLanguage = async () => {
       try {
         setLoadingProgress(0);
+        setPages([]);
+        setLoadingBatch(0);
+        setNumPages(null);
+        setPdfDoc(null);
         const token = localStorage.getItem("token");
- 
         const langRes = await axios.get(`/api/books/${bookId}/details`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const language = langRes.data.book?.language || langRes.data.book?.language_name;
         const isBookRtl = language?.toLowerCase().startsWith("ar");
         setIsRtl(isBookRtl);
- 
-        const pdfRes = await axios.get(`/api/books/${bookId}/stream-version`, {
-          headers: { Authorization: `Bearer ${token}` },
-          responseType: "arraybuffer",
-        });
-        const loadingTask = pdfjsLib.getDocument({ data: pdfRes.data });
+        const baseURL = axios.defaults.baseURL;
+const pdfUrl = `${baseURL}/api/books/${bookId}/stream-version`;
+        const loadingTask = pdfjsLib.getDocument({ url: pdfUrl, httpHeaders: { Authorization: `Bearer ${token}` } });
         const pdf = await loadingTask.promise;
- 
-        let imagePages = [];
-        const numPages = pdf.numPages;
- 
-        for (let i = 1; i <= numPages; i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 2.0 });
-          const canvas = document.createElement("canvas");
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const context = canvas.getContext("2d");
-          await page.render({ canvasContext: context, viewport }).promise;
-          imagePages.push(canvas.toDataURL("image/jpeg", 0.9));
-          setLoadingProgress(Math.round((i / numPages) * 100));
-        }
- 
-        // *** FIX #1: Insert blank page after cover for RTL books ***
-        if (isBookRtl) {
-          const blankPage = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-          // Insert blank page at index 1 (after the cover)
-          if (imagePages.length > 0 && imagePages.length % 2 != 0) {
-            imagePages.splice(imagePages.length - 1, 0, blankPage);
-          }
-          else if (imagePages.length > 0) {
-            imagePages.splice(imagePages.length - 1, 0);
-          }
-        }
- 
-        setPages(imagePages);
+        if (!isMounted) return;
+        setNumPages(pdf.numPages);
+        setPdfDoc(pdf);
+        loadBatch(pdf, 0, isBookRtl);
       } catch (error) {
         console.error("Error loading PDF:", error);
         alert("Could not load the book.");
@@ -99,9 +78,59 @@ const playFlipSound = () => {
       }
     };
     fetchPdfAndLanguage();
+    return () => { isMounted = false; };
   }, [bookId, onClose]);
  
-  // Sizing Logic (No changes)
+  const loadBatch = async (pdf, batchIndex, isBookRtl) => {
+    if (!pdf) return;
+    const start = batchIndex * BATCH_SIZE + 1;
+    const end = Math.min((batchIndex + 1) * BATCH_SIZE, pdf.numPages);
+    let newPages = [];
+    for (let i = start; i <= end; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 1.0 });
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const context = canvas.getContext("2d");
+      await page.render({ canvasContext: context, viewport }).promise;
+      newPages.push(canvas.toDataURL("image/webp", 0.8));
+      setLoadingProgress(Math.round((i / pdf.numPages) * 100));
+    }
+    if (isBookRtl && batchIndex === 0) {
+      const blankPage = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+      if (newPages.length > 0 && newPages.length % 2 !== 0) {
+        newPages.splice(newPages.length - 1, 0, blankPage);
+      } else if (newPages.length > 0) {
+        newPages.splice(newPages.length - 1, 0);
+      }
+    }
+    setPages(prev => {
+      if (prev.length >= end) return prev;
+      const combined = [...prev];
+      for (let i = 0; i < newPages.length; i++) {
+        if (!combined[start - 1 + i]) {
+          combined[start - 1 + i] = newPages[i];
+        }
+      }
+      return combined;
+    });
+    if (batchIndex === 0) {
+      setInitialBatchLoaded(true);
+    }
+    if (end < pdf.numPages) {
+      setTimeout(() => {
+        setLoadingBatch(batchIndex + 1);
+      }, 0);
+    }
+  };
+ 
+  useEffect(() => {
+    if (pdfDoc && numPages && loadingBatch * BATCH_SIZE < numPages) {
+      loadBatch(pdfDoc, loadingBatch, isRtl);
+    }
+  }, [loadingBatch, pdfDoc, numPages, isRtl]);
+ 
   useLayoutEffect(() => {
     const updateSize = () => {
       if (!modalContentRef.current || pages.length === 0) return;
@@ -135,7 +164,6 @@ const playFlipSound = () => {
     }
   }, [pages]);
  
-  // RTL initial flip (No changes)
   useEffect(() => {
     let timeoutId;
     if (isRtl && pages.length > 0 && bookDimensions.width > 0) {
@@ -148,7 +176,6 @@ const playFlipSound = () => {
     };
   }, [pages, isRtl, bookDimensions]);
  
-  // *** FIX #3a: Updated page number display logic ***
   useEffect(() => {
     if (pages.length === 0) return;
  
@@ -156,13 +183,11 @@ const playFlipSound = () => {
     let displayPage;
  
     if (isRtl) {
-      // `currentPage` is the index in the *reversed* array
-      if (currentPage === pages.length - 1) { // Cover page
+      if (currentPage === pages.length - 1) {
         displayPage = 1;
-      } else if (currentPage === pages.length - 2) { // Blank page
-        displayPage = 2; // Show the number of the facing page
+      } else if (currentPage === pages.length - 2) {
+        displayPage = 2;
       } else {
-        // Map the reversed index back to the original page number
         displayPage = totalRealPages - currentPage;
       }
     } else {
@@ -173,11 +198,9 @@ const playFlipSound = () => {
  
   }, [currentPage, isRtl, pages]);
  
-  // Control handlers
   const handleZoomIn = () => setScale((s) => Math.min(s + 0.2, 2.5));
   const handleZoomOut = () => setScale((s) => Math.max(s - 0.2, 0.5));
  
-  // *** FIX #3b: Updated Go To Page logic ***
   const handleGoToPage = (e) => {
     e.preventDefault();
     let pageNumber = parseInt(pageInput, 10);
@@ -188,10 +211,9 @@ const playFlipSound = () => {
  
     let targetIndex;
     if (isRtl) {
-      if (pageNumber === 1) { // Go to Cover
+      if (pageNumber === 1) {
         targetIndex = pages.length - 1;
       } else {
-        // Map user page number to reversed array index, accounting for the blank page
         targetIndex = totalRealPages - pageNumber;
       }
     } else {
@@ -218,10 +240,10 @@ const playFlipSound = () => {
       <div className="flipbook-modal-content" ref={modalContentRef}>
         <button onClick={onClose} className="modal-close-button" title="Close">✕</button>
  
-        {loadingProgress < 100 ? (
+        {!initialBatchLoaded ? (
           <div className="loading-container">
             <div className="spinner"></div>
-            <p>Loading your book... {loadingProgress}%</p>
+            <p>Loading first pages... {loadingProgress}%</p>
           </div>
         ) : (
           <div
@@ -247,7 +269,7 @@ const playFlipSound = () => {
                 className="flipbook-component"
                 onFlip={(e) => {
                   setCurrentPage(e.data);
-                  playFlipSound(); // <-- CALL THE SOUND FUNCTION
+                  playFlipSound();
               }}
                 ref={flipBookRef}
                 rtl={isRtl}
@@ -262,13 +284,11 @@ const playFlipSound = () => {
       </div>
  
       <div className="flipbook-bottom-bar">
-        {/* Zoom Controls */}
         <button onClick={handleZoomOut} title="Zoom Out"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM8 9h3v1H8z" /></svg></button>
         <button onClick={handleZoomIn} title="Zoom In"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM10 9H8v1h2v2h1v-2h2V9h-2V7h-1v2z" /></svg></button>
         <div className="separator"></div>
  
         <div className="page-nav-controls">
-          {/* *** FIX #2: Simplified Navigation Buttons *** */}
           <button onClick={() => flipBookRef.current?.pageFlip().flip(0)} title="Go to Beginning"><svg viewBox="0 0 24 24"><path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z" /></svg></button>
           <button onClick={() => flipBookRef.current?.pageFlip().flipPrev()} title="Previous Page"><svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" /></svg></button>
  
