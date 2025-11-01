@@ -269,6 +269,7 @@ const Books = () => {
                       width={400} 
                       height={460} 
                       className="bookx-card-image"
+                      bookTitle={group.title}
                     />
                     <div className="bookx-card-hover-overlay">
                       <button 
@@ -346,7 +347,7 @@ const Books = () => {
     
     {/* Right Column: Cover Image */}
     <div className="bookx-details-image-wrapper">
-        <PDFCoverPreview pdfUrl={`/api/books/${selectedBook.book_id}/stream-cover`} width={250} height={300} />
+        <PDFCoverPreview pdfUrl={`/api/books/${selectedBook.book_id}/stream-cover`} width={250} height={300} bookTitle={selectedBook.title} />
     </div>
   </div>
   <h2 className="bookx-details-title">{selectedBook.title}</h2>

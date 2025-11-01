@@ -6,6 +6,7 @@ const { authenticateAdmin, authenticateUser, authenticateUserOrAdmin } = require
 
 router.get('/dashboard', authenticateUser, auth.userDashboard);
 router.post('/register', authenticateAdmin, auth.registerUser);
+router.get('/:id/issued-books', authenticateUserOrAdmin, auth.getUserIssuedBooks);
 router.get('/:id', authenticateUserOrAdmin, auth.getUserById);
 router.put('/:id', authenticateAdmin, auth.updateUser);
 router.delete('/:id', authenticateAdmin, auth.deleteUser);

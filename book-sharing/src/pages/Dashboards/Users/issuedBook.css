@@ -1546,7 +1546,7 @@ body {
 
 
 /* ============================================== */
-/* ===     NEW AESTHETIC BOOK CARD STYLES     === */
+/* ===     NEW BOOK CARD STYLES     === */
 /* ============================================== */
 
 .book-card-issued {
@@ -1643,7 +1643,7 @@ body {
 
 /* src/pages/Dashboards/Users/issuedBook.css */
 
-/* --- Aesthetic Tag Styling --- */
+/* --- Tag Styling --- */
 
 /* 1. Style the containers that hold the tags */
 .book-details-tags,

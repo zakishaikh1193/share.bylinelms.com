@@ -192,7 +192,8 @@ streamBookVersion: async (req, res) => {
       country_id,
       booktype_id, // New field
       format_id,   // New field
-      tag_ids      // New field (array)
+      tag_ids,     // New field (array)
+      url          // New field
     } = req.body;
  
     const created_by = req.user.user_id;
@@ -208,10 +209,11 @@ streamBookVersion: async (req, res) => {
         country_id,
         booktype_id,
         format_id,
+        url,
         created_by,
         created_at,
         last_updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         title,
         description,
@@ -222,6 +224,7 @@ streamBookVersion: async (req, res) => {
         country_id,
         booktype_id,
         format_id,
+        url || null,
         created_by,
       ]
     );
@@ -336,6 +339,7 @@ getBooks: async (req, res) => {
         b.language_id, b.standard_id, b.country_id, b.booktype_id,
         bt.book_type_title,
         ctry.country_name,
+        b.url,
         b.created_by, b.created_at,
         c.uploaded_link AS cover,
         bv.version_label, bv.isbn_code,
@@ -1095,7 +1099,8 @@ approveAccessRequest: async (req, res) => {
         isbn_code,
         version_label,
         format_id,   // New field
-        tag_ids      // New field (array)
+        tag_ids,     // New field (array)
+        url          // New field
       } = req.body;
  
       console.log('Updating book with ID:', bookId);
@@ -1111,7 +1116,8 @@ approveAccessRequest: async (req, res) => {
         isbn_code,
         version_label,
         format_id,
-        tag_ids
+        tag_ids,
+        url
       });
  
       // First check if book exists
@@ -1137,6 +1143,7 @@ approveAccessRequest: async (req, res) => {
              country_id = ?,
              booktype_id = ?,
              format_id = ?,
+             url = ?,
              last_updated_at = NOW()
          WHERE book_id = ?`,
         [
@@ -1149,6 +1156,7 @@ approveAccessRequest: async (req, res) => {
           country_id,
           booktype_id,
           format_id,
+          url || null,
           bookId
         ]
       );
@@ -1257,20 +1265,25 @@ approveAccessRequest: async (req, res) => {
       const role = req.user.role;
       let books;
 
-      const baseSelect = `
-        SELECT
-          b.book_id, b.title, b.description, b.grade_id, g.grade_level,
-          b.subject_id, s.subject_name,
-          b.language_id, l.language_name,
-          b.standard_id, std.standard_name,
-          b.country_id, ctry.country_name,
-          b.booktype_id, bt.book_type_title,
-          b.format_id, bf.format_name,
-          b.created_by, b.created_at,
-          b.last_updated_at,
-          c.uploaded_link AS cover,
-          bv.version_label, bv.isbn_code,
-          bv.zip_link
+      // Base query parts
+      const selectFields = `
+        b.book_id, b.title, b.description, b.grade_id, g.grade_level,
+        b.subject_id, s.subject_name,
+        b.language_id, l.language_name,
+        b.standard_id, std.standard_name,
+        b.country_id, ctry.country_name,
+        b.booktype_id, bt.book_type_title,
+        b.format_id, bf.format_name,
+        b.url,
+        b.created_by, b.created_at,
+        b.last_updated_at,
+        c.uploaded_link AS cover,
+        bv.version_label, bv.isbn_code,
+        bv.zip_link,
+        CASE WHEN c.uploaded_link IS NOT NULL THEN 1 ELSE 0 END AS has_cover
+      `;
+      
+      const fromAndJoins = `
         FROM books b
         LEFT JOIN grades g ON b.grade_id = g.grade_id
         LEFT JOIN subjects s ON b.subject_id = s.subject_id
@@ -1298,7 +1311,7 @@ approveAccessRequest: async (req, res) => {
 
       if (role === 'admin') {
         [books] = await pool.query(
-          baseSelect + `
+          `SELECT ${selectFields} ${fromAndJoins}
           WHERE NOT EXISTS (
             SELECT 1 FROM book_ministry_reviews m
             WHERE m.book_id = b.book_id AND m.status = 'pending'
@@ -1306,7 +1319,7 @@ approveAccessRequest: async (req, res) => {
         );
       } else {
         [books] = await pool.query(
-          baseSelect + `
+          `SELECT ${selectFields}, bc.can_download ${fromAndJoins}
           JOIN book_control bc ON b.book_id = bc.book_id
           WHERE bc.user_id = ?
             AND bc.permission IN ('owner', 'editor', 'viewer')
@@ -1369,6 +1382,7 @@ approveAccessRequest: async (req, res) => {
             country_name: book.country_name,
             booktype_id: book.booktype_id,
             book_type_title: book.book_type_title,
+            url: book.url,
             created_by: book.created_by,
             created_at: book.created_at,
             last_updated_at: book.last_updated_at,
@@ -1385,6 +1399,16 @@ approveAccessRequest: async (req, res) => {
         const bookWithZip = { ...book };
         // Attach zip_link if available
         if (book.zip_link) bookWithZip.zip_link = book.zip_link;
+        // Attach can_download permission
+        if (role === 'admin') {
+          // Admins always have download permission
+          bookWithZip.can_download = true;
+        } else {
+          // For non-admin users, use the value from book_control (defaults to false if undefined)
+          bookWithZip.can_download = book.can_download === 1 || book.can_download === true;
+        }
+        // Attach cover information (has_cover flag)
+        bookWithZip.has_cover = book.has_cover === 1 || book.has_cover === true;
         if (formatName.includes('digital')) grouped[key].digital = bookWithZip;
         if (formatName.includes('print')) grouped[key].print = bookWithZip;
       }

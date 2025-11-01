@@ -18,6 +18,7 @@ export default function AddBookForm() {
     booktype_id: '',
     version_label: '',
     isbn_code: '',
+    url: '',
     digital_file: null,
     print_file: null,
     digital_cover_file: null,
@@ -276,6 +277,7 @@ export default function AddBookForm() {
           booktype_id: formData.booktype_id,
           format_id: formatId,
           tag_ids,
+          url: formData.url,
         }, config);
         const book_id = book.book_id;
         // 2. Add version
@@ -465,6 +467,17 @@ export default function AddBookForm() {
             maxLength={17}
           />
           {isbnError && <span className="error-message">{isbnError}</span>}
+        </label>
+
+        <label className="full-width">
+          URL:
+          <input
+            type="url"
+            name="url"
+            placeholder="https://example.com"
+            value={formData.url}
+            onChange={handleChange}
+          />
         </label>
 
         

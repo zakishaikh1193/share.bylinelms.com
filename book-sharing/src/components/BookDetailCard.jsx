@@ -58,6 +58,7 @@ function BookDetailCard({
               pdfUrl={`/api/books/${book.book_id}/stream-cover`}
               width={300}
               height={360}
+              bookTitle={book.title}
             />
             {fileSize && (
               <div className="book-size-info">

@@ -228,3 +228,67 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+// Get user's issued books
+exports.getUserIssuedBooks = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestingUserId = req.user.user_id;
+    const requestingUserRole = req.user.role;
+
+    // Check authorization: admin can access any user's books, regular users can only access their own
+    if (requestingUserRole !== 'admin' && parseInt(requestingUserId) !== parseInt(id)) {
+      return res.status(403).json({ error: 'Unauthorized access' });
+    }
+
+    // Fetch user's assigned books with basic information
+    const [books] = await db.query(`
+      SELECT 
+        b.book_id,
+        b.title,
+        b.description,
+        s.subject_name AS subject,
+        g.grade_level AS grade,
+        l.language_name AS language,
+        std.standard_name AS standard,
+        ctry.country_name AS country,
+        bt.book_type_title AS book_type,
+        bv.version_label,
+        bv.isbn_code,
+        bf.format_name AS format,
+        bc.can_download,
+        bc.expiry
+      FROM books b
+      JOIN book_control bc ON b.book_id = bc.book_id
+      LEFT JOIN grades g ON b.grade_id = g.grade_id
+      LEFT JOIN subjects s ON b.subject_id = s.subject_id
+      LEFT JOIN languages l ON b.language_id = l.language_id
+      LEFT JOIN standards std ON b.standard_id = std.standard_id
+      LEFT JOIN countries ctry ON b.country_id = ctry.country_id
+      LEFT JOIN booktypes bt ON b.booktype_id = bt.book_type_id
+      LEFT JOIN book_formats bf ON b.format_id = bf.format_id
+      LEFT JOIN (
+        SELECT book_id, version_label, isbn_code
+        FROM book_versions
+        WHERE (book_id, version_id) IN (
+          SELECT book_id, MAX(version_id)
+          FROM book_versions
+          GROUP BY book_id
+        )
+      ) bv ON b.book_id = bv.book_id
+      WHERE bc.user_id = ?
+        AND bc.permission IN ('owner', 'editor', 'viewer')
+        AND (bc.expiry IS NULL OR bc.expiry > NOW())
+        AND NOT EXISTS (
+          SELECT 1 FROM book_ministry_reviews m
+          WHERE m.book_id = b.book_id AND m.status = 'pending'
+        )
+      ORDER BY b.title
+    `, [id]);
+
+    res.json(books);
+  } catch (err) {
+    console.error('Get user issued books error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};

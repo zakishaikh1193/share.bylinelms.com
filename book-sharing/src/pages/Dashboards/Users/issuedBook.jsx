@@ -1,11 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from "../../../axiosConfig";
 import "./issuedBook.css";
-// No longer need Link for the flipbook
-import { Link } from "react-router-dom"; 
 import PDFCoverPreview from "../../../components/PDFCoverPreview";
-// Import the updated FlipbookViewer
-import FlipbookViewer from "./FlipbookViewer";
 
 // --- FilterCategory Component (No Changes) ---
 function FilterCategory({ title, options, selectedOptions, onChange }) {
@@ -50,11 +46,24 @@ function FilterCategory({ title, options, selectedOptions, onChange }) {
 }
 
 // --- Grouped Book Card ---
-function GroupedBookCard({ group, onReadBook }) {
+function GroupedBookCard({ group }) {
   // Prefer digital for preview/read, else print
   const main = group.digital || group.print;
   const digital = group.digital;
   const print = group.print;
+  
+  // Handle Read Book - redirect to URL only
+  const handleReadBook = () => {
+    // Check URL from group, digital, or print (in that order)
+    const url = group.url || digital?.url || print?.url;
+    if (url) {
+      // If URL exists, open it in a new tab
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      // Show alert if no URL is available
+      alert('This book does not have a URL configured. Please contact the administrator.');
+    }
+  };
 
   // Find latest ZIP (prefer digital, else print)
   const zipLink = (digital && digital.zip_link) || (print && print.zip_link);
@@ -131,6 +140,7 @@ function GroupedBookCard({ group, onReadBook }) {
           pdfUrl={`/api/books/${main.book_id}/stream-cover`}
           width={390}
           height={500}
+          bookTitle={group.title}
         />
       </div>
       <div className="book-card-issued-content">
@@ -153,29 +163,27 @@ function GroupedBookCard({ group, onReadBook }) {
         <div className="book-card-issued-actions">
           {/* Read Book (digital only) */}
           {(digital || print) && (
-            <button onClick={() => onReadBook((digital || print).book_id)} className="book-card-issued-button">Read Book</button>
+            <button onClick={handleReadBook} className="book-card-issued-button">Read Book</button>
           )}
           {/* Download Digital PDF */}
-          {digital && (
+          {digital && digital.can_download && (
             <button onClick={() => handleDownload(digital.book_id, digital.version_label)} className="book-card-issued-button">Download Digital PDF</button>
           )}
-          {/* Download Digital Cover */}
-          {digital && (
+          {/* Download Digital Cover - only show if cover exists */}
+          {digital && digital.can_download && digital.has_cover && (
             <button onClick={() => handleDownloadCover(digital.book_id)} className="book-card-issued-button">Download Digital Cover</button>
           )}
           {/* Download Print PDF */}
-          {print && (
+          {print && print.can_download && (
             <button onClick={() => handleDownload(print.book_id, print.version_label)} className="book-card-issued-button">Download Print PDF</button>
           )}
-          {/* Download Print Cover */}
-          {print && (
+          {/* Download Print Cover - only show if cover exists */}
+          {print && print.can_download && print.has_cover && (
             <button onClick={() => handleDownloadCover(print.book_id)} className="book-card-issued-button">Download Print Cover</button>
           )}
-          {/* Download ZIP (latest) */}
-          {zipLink ? (
+          {/* Download ZIP (latest) - only show if user has download permission */}
+          {zipLink && (digital?.can_download || print?.can_download) && (
             <button onClick={handleDownloadZip} className="book-card-issued-button">Download ZIP</button>
-          ) : (
-            <button className="book-card-issued-button disabled">ZIP Not Available</button>
           )}
         </div>
       </div>
@@ -184,13 +192,26 @@ function GroupedBookCard({ group, onReadBook }) {
 }
 
 // --- BookDetail Component (Grouped) ---
-function BookDetail({ group, onGoBack, onReadBook }) {
+function BookDetail({ group, onGoBack }) {
   const main = group.digital || group.print;
   const digital = group.digital;
   const print = group.print;
   const zipLink = (digital && digital.zip_link) || (print && print.zip_link);
   const zipBookId = (digital && digital.book_id) || (print && print.book_id);
   const zipVersionLabel = (digital && digital.version_label) || (print && print.version_label);
+  
+  // Handle Read Book - redirect to URL only
+  const handleReadBook = () => {
+    // Check URL from group, digital, or print (in that order)
+    const url = group.url || digital?.url || print?.url;
+    if (url) {
+      // If URL exists, open it in a new tab
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      // Show alert if no URL is available
+      alert('This book does not have a URL configured. Please contact the administrator.');
+    }
+  };
 
   // Read More logic for description
   const [showFullDesc, setShowFullDesc] = useState(false);
@@ -337,6 +358,7 @@ function BookDetail({ group, onGoBack, onReadBook }) {
                 pdfUrl={`/api/books/${main.book_id}/stream-cover`}
                 width={300}
                 height={360}
+                bookTitle={group.title}
               />
               {/* File size info */}
               <div className="book-size-info" style={{ marginTop: '1.2em', textAlign: 'center', fontSize: '0.98em', color: '#64748b' }}>
@@ -377,9 +399,10 @@ function BookDetail({ group, onGoBack, onReadBook }) {
         <div className="action-buttons">
           <button onClick={onGoBack} className="btn-go-back" type="button">Go Back</button>
           {(digital || print) && (
-            <button onClick={() => onReadBook((digital || print).book_id)} className="btn-learn-more">Read Book</button>
+            <button onClick={handleReadBook} className="btn-learn-more">Read Book</button>
           )}
-          {/* Download PDF Dropdown */}
+          {/* Download PDF Dropdown - only show if user has download permission */}
+          {(digital?.can_download || print?.can_download) && (
           <div style={{ position: 'relative', display: 'inline-block' }} ref={pdfBtnRef}>
             <button
               className="btn-learn-more"
@@ -428,7 +451,9 @@ function BookDetail({ group, onGoBack, onReadBook }) {
               </div>
             )}
           </div>
-          {/* Download Cover Dropdown */}
+          )}
+          {/* Download Cover Dropdown - only show if user has download permission AND cover exists */}
+          {((digital?.can_download && digital?.has_cover) || (print?.can_download && print?.has_cover)) && (
           <div style={{ position: 'relative', display: 'inline-block' }} ref={coverBtnRef}>
             <button
               className="btn-learn-more"
@@ -458,7 +483,7 @@ function BookDetail({ group, onGoBack, onReadBook }) {
                 }}
                 onClick={e => e.stopPropagation()}
               >
-                {digital && (
+                {digital && digital.has_cover && (
                   <button
                     className="dropdown-download-btn"
                     onClick={() => { handleDownloadCover(digital.book_id); setCoverMenuOpen(false); }}
@@ -466,7 +491,7 @@ function BookDetail({ group, onGoBack, onReadBook }) {
                     Digital Cover
                   </button>
                 )}
-                {print && (
+                {print && print.has_cover && (
                   <button
                     className="dropdown-download-btn"
                     onClick={() => { handleDownloadCover(print.book_id); setCoverMenuOpen(false); }}
@@ -477,8 +502,9 @@ function BookDetail({ group, onGoBack, onReadBook }) {
               </div>
             )}
           </div>
-          {/* Download ZIP (only if available) */}
-          {zipLink && (
+          )}
+          {/* Download ZIP (only if available and user has download permission) */}
+          {zipLink && (digital?.can_download || print?.can_download) && (
             <button
               className="btn-learn-more"
               onClick={handleDownloadZip}
@@ -498,7 +524,6 @@ function BookDetail({ group, onGoBack, onReadBook }) {
 const Books = () => {
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
-  const [flipbookBookId, setFlipbookBookId] = useState(null);
   const [filters, setFilters] = useState({
     subject: [],
     grade: [],
@@ -566,7 +591,7 @@ const Books = () => {
     <div className="app-container issued-books">
       
       {/* Filter and Grid */}
-      {!selectedGroup && !flipbookBookId && (
+      {!selectedGroup && (
         <div className="issued-books-header-bar" style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', gap: '2rem' }}>
           
           <aside className="filter-sidebar" style={{ flex: '0 0 270px', minWidth: 220 }}>
@@ -598,54 +623,55 @@ const Books = () => {
               {filteredGroups.length === 0 ? (
                 <p className="no-books-message">No books match the selected filters.</p>
               ) : (
-                filteredGroups.map((group) => (
-                  <div
-                    key={group.title + group.isbn_code + group.grade_level + group.version_label}
-                    className="book-card-issued issued-books-card"
-                    onClick={() => setSelectedGroup(group)}
-                    style={{ cursor: "pointer", minHeight: 480, maxHeight: 1000, width: 380, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', borderRadius: 18, boxShadow: '0 2px 12px rgba(30,58,138,0.07)', background: '#fff', margin: '0.5rem', padding: '0.2rem 0.2rem 0.2rem 0.2rem', transition: 'box-shadow 0.2s' }}
-                  >
-                    <PDFCoverPreview
-                      pdfUrl={`/api/books/${(group.digital || group.print).book_id}/stream-cover`}
-                      width={400}
-                      height={420}
-                    />
-                    <div className="book-card-issued-content" style={{ width: '100%', marginTop: 18 }}>
-                      <h3 className="book-card-issued-title" style={{ fontSize: '1.18rem', fontWeight: 700, marginBottom: 6 }}>{group.title}</h3>
-                      <div className="book-card-issued-subtitle" style={{ minHeight: 24, maxHeight: 40, overflow: 'hidden' }}
-                        dangerouslySetInnerHTML={{ __html: group.description ? (group.description.length > 40 ? group.description.substring(0, 40) + '...' : group.description) : '' }}
-                      />
-                      <div className="book-card-issued-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-                        {group.grade_level && <span className="book-card-issued-tag">Grade: {group.grade_level}</span>}
-                        {group.version_label && <span className="book-card-issued-tag">{group.version_label}</span>}
-                        {group.isbn_code && <span className="book-card-issued-tag">{group.isbn_code}</span>}
-                        {group.book_type_title && <span className="book-card-issued-tag">{group.book_type_title}</span>}
-                        {group.country_name && <span className="book-card-issued-tag">{group.country_name}</span>}
-                        {group.subject_name && <span className="book-card-issued-tag">{group.subject_name}</span>}
-                        {group.language_name && <span className="book-card-issued-tag">{group.language_name}</span>}
-                        {group.standard_name && <span className="book-card-issued-tag">{group.standard_name}</span>}
+                filteredGroups.map((group) => {
+                  const bookId = (group.digital || group.print)?.book_id;
+                  const uniqueKey = `${bookId}-${group.title}-${group.isbn_code}-${group.grade_level}-${group.version_label}`;
+                  return (
+                    <div
+                      key={uniqueKey}
+                      className="book-card-issued issued-books-card"
+                      onClick={() => setSelectedGroup(group)}
+                      style={{ cursor: "pointer", minHeight: 480, maxHeight: 1000, width: 380, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', borderRadius: 18, boxShadow: '0 2px 12px rgba(30,58,138,0.07)', background: '#fff', margin: '0.5rem', padding: '0.2rem 0.2rem 0.2rem 0.2rem', transition: 'box-shadow 0.2s' }}
+                    >
+                      {bookId && (
+                        <PDFCoverPreview
+                          pdfUrl={`/api/books/${bookId}/stream-cover`}
+                          width={400}
+                          height={420}
+                          bookTitle={group.title}
+                        />
+                      )}
+                      <div className="book-card-issued-content" style={{ width: '100%', marginTop: 18 }}>
+                        <h3 className="book-card-issued-title" style={{ fontSize: '1.18rem', fontWeight: 700, marginBottom: 6 }}>{group.title}</h3>
+                        <div className="book-card-issued-subtitle" style={{ minHeight: 24, maxHeight: 40, overflow: 'hidden' }}
+                          dangerouslySetInnerHTML={{ __html: group.description ? (group.description.length > 40 ? group.description.substring(0, 40) + '...' : group.description) : '' }}
+                        />
+                        <div className="book-card-issued-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                          {group.grade_level && <span className="book-card-issued-tag">Grade: {group.grade_level}</span>}
+                          {group.version_label && <span className="book-card-issued-tag">{group.version_label}</span>}
+                          {group.isbn_code && <span className="book-card-issued-tag">{group.isbn_code}</span>}
+                          {group.book_type_title && <span className="book-card-issued-tag">{group.book_type_title}</span>}
+                          {group.country_name && <span className="book-card-issued-tag">{group.country_name}</span>}
+                          {group.subject_name && <span className="book-card-issued-tag">{group.subject_name}</span>}
+                          {group.language_name && <span className="book-card-issued-tag">{group.language_name}</span>}
+                          {group.standard_name && <span className="book-card-issued-tag">{group.standard_name}</span>}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </main>
         </div>
       )}
       
-      {flipbookBookId ? (
-        <FlipbookViewer
-          bookId={flipbookBookId}
-          onClose={() => setFlipbookBookId(null)}
-        />
-      ) : selectedGroup ? (
+      {selectedGroup && (
         <BookDetail
           group={selectedGroup}
           onGoBack={() => setSelectedGroup(null)}
-          onReadBook={setFlipbookBookId}
         />
-      ) : null}
+      )}
     </div>
   );
 };

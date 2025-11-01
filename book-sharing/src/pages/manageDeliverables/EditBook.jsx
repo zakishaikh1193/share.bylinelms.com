@@ -19,6 +19,7 @@ export default function EditBookForm() {
     booktype_id: '',
     version_label: '',
     isbn_code: '',
+    url: '',
     digital_file: null,
     print_file: null,
     digital_cover_file: null,
@@ -88,6 +89,7 @@ export default function EditBookForm() {
           booktype_id: group.booktype_id || '',
           version_label: group.version_label || '',
           isbn_code: group.isbn_code || '',
+          url: base.url || group.url || '',
           digital_file: null,
           print_file: null,
           digital_cover_file: null,
@@ -282,6 +284,7 @@ export default function EditBookForm() {
           version_label: formData.version_label,
           format_id: formatId,
           tag_ids: selectedTags.map(t => t.tag_id || t.tag_name),
+          url: formData.url,
         }, config);
         // Always update version if a new PDF or ZIP is provided
         const { data: versionData } = await axios.get(`/api/books/${book_id}/versions`, config);
@@ -431,6 +434,17 @@ export default function EditBookForm() {
           ISBN Code:
           <input type="text" name="isbn_code" value={formData.isbn_code} placeholder="Enter ISBN Code" onChange={handleChange} maxLength={17}/>
           {isbnError && <span className="error-message">{isbnError}</span>}
+        </label>
+
+        <label className="full-width">
+          URL:
+          <input
+            type="url"
+            name="url"
+            placeholder="https://example.com"
+            value={formData.url}
+            onChange={handleChange}
+          />
         </label>
 
         <label>

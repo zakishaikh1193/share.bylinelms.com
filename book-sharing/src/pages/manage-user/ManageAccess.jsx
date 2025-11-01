@@ -417,6 +417,7 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
                     pdfUrl={`/api/books/${(book.digital || book.print).book_id}/stream-cover`}
                     width={250}
                     height={260}
+                    bookTitle={title}
                   />
                   <div className="book-card-header">
                     <h3>{title}</h3>
