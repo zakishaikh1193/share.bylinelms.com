@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/AdminDashboard.css"; // Ensure this CSS file is comprehensive
-import logo from "../../assests/images/logo.jpg";
+import logo from "../../assests/images/logo.png";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { Link, useNavigate, Outlet, useLocation } from "react-router-dom";
 
-import books1Image from "../../assests/images/books1.png"; // Import the image for the dashboard section
+import books1Image from "../../assests/images/books1.jpg"; // Import the image for the dashboard section
 
 
 // Import axiosConfig for API calls

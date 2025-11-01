@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../axiosConfig';
 import '../../styles/explorePageCss/LoginPage.css';
-import logo from '../../../src/assests/images/logo.jpg';
+import logo from '../../../src/assests/images/logo.png';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from '../../axiosConfig';
 import '../../styles/explorePageCss/bookDisplay.css';
 import PDFCoverPreview from '../../components/PDFCoverPreview';
-import FlipbookViewer from '../Dashboards/Users/FlipbookViewer';
 
 const Books = () => {
   const [books, setBooks] = useState([]);
@@ -17,7 +16,6 @@ const Books = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [selectedBook, setSelectedBook] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [flipbookBookId, setFlipbookBookId] = useState(null);
 
   // State for the modal's description expand/collapse feature
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -376,8 +374,15 @@ const Books = () => {
     <button 
       className="btn btn-primary" 
       onClick={() => {
-        setFlipbookBookId(selectedBook.book_id);
-        setSelectedBook(null);
+        // Check URL from selectedBook
+        const url = selectedBook.url;
+        if (url) {
+          // If URL exists, open it in a new tab
+          window.open(url, '_blank', 'noopener,noreferrer');
+        } else {
+          // Show alert if no URL is available
+          alert('This book does not have a URL configured. Please contact the administrator.');
+        }
       }}
     >
       View Book
@@ -389,12 +394,6 @@ const Books = () => {
         </div>
       )}
 
-      {flipbookBookId && (
-        <FlipbookViewer
-          bookId={flipbookBookId}
-          onClose={() => setFlipbookBookId(null)}
-        />
-      )}
     </div>
   );
 };

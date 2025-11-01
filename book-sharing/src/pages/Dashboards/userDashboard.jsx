@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, Link, Outlet, useLocation } from "react-router-dom";
 import "../../styles/userDashboard.css";
-import logo from "../../assests/images/logo.jpg";
-import img1 from "../../assests/images/img1.png";
+import logo from "../../assests/images/logo.png";
+import img1 from "../../assests/images/img1.jpg";
 import { FaUserCircle, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import axios from "../../axiosConfig";
  
@@ -26,6 +26,16 @@ function UserDashboard() {
     if (savedState !== null) {
       setSidebarCollapsed(savedState === "true");
     }
+    
+    // Listen for sidebar toggle events from child components
+    const handleSidebarToggle = (event) => {
+      if (event.detail && typeof event.detail.collapsed === 'boolean') {
+        setSidebarCollapsed(event.detail.collapsed);
+      }
+    };
+    
+    window.addEventListener('sidebar-toggle', handleSidebarToggle);
+    return () => window.removeEventListener('sidebar-toggle', handleSidebarToggle);
   }, []);
  
   useEffect(() => {

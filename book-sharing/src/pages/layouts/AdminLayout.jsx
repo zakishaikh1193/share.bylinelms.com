@@ -1,7 +1,7 @@
 // src/components/layout/AdminLayout.jsx
 import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import logo from "../../assests/images/logo.jpg";
+import logo from "../../assests/images/logo.png";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import "../../styles/AdminDashboard.css";

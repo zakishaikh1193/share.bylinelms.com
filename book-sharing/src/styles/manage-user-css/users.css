@@ -238,11 +238,7 @@
   padding: 6px;
   transition: all 0.3s ease;
 }
- 
-.action-buttons button:hover {
-  transform: scale(1.2);
-}
- 
+
 .view-btn:hover {
   color: #3b82f6;
 }

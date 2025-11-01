@@ -41,7 +41,7 @@
  
 /* 📷 Sidebar Logo */
 .sidebar-logo {
-  width: 120px;
+  width: 50px;
   height: auto;
 }
  
@@ -313,7 +313,7 @@
   }
  
   .sidebar-logo {
-    width: 100px;
+    width: 50px;
   }
  
   .nav-link-with-toggle {

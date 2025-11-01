@@ -39,8 +39,9 @@ body, html {
 }
 
 .logo {
-  width: 15rem;
+  width: 8rem;
   height: auto;
+  max-width: 150px;
 }
 
 /* Login box */
@@ -172,7 +173,8 @@ body, html {
   }
 
   .logo {
-    width: 12rem;
+    width: 7rem;
+    max-width: 120px;
   }
 }
 
@@ -202,7 +204,8 @@ body, html {
   }
 
   .logo {
-    width: 10rem;
+    width: 6rem;
+    max-width: 100px;
   }
 
   .login-header {

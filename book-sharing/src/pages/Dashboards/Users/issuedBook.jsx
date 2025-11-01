@@ -51,19 +51,6 @@ function GroupedBookCard({ group }) {
   const main = group.digital || group.print;
   const digital = group.digital;
   const print = group.print;
-  
-  // Handle Read Book - redirect to URL only
-  const handleReadBook = () => {
-    // Check URL from group, digital, or print (in that order)
-    const url = group.url || digital?.url || print?.url;
-    if (url) {
-      // If URL exists, open it in a new tab
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } else {
-      // Show alert if no URL is available
-      alert('This book does not have a URL configured. Please contact the administrator.');
-    }
-  };
 
   // Find latest ZIP (prefer digital, else print)
   const zipLink = (digital && digital.zip_link) || (print && print.zip_link);
@@ -161,10 +148,6 @@ function GroupedBookCard({ group }) {
           ))}
         </div>
         <div className="book-card-issued-actions">
-          {/* Read Book (digital only) */}
-          {(digital || print) && (
-            <button onClick={handleReadBook} className="book-card-issued-button">Read Book</button>
-          )}
           {/* Download Digital PDF */}
           {digital && digital.can_download && (
             <button onClick={() => handleDownload(digital.book_id, digital.version_label)} className="book-card-issued-button">Download Digital PDF</button>
@@ -200,18 +183,54 @@ function BookDetail({ group, onGoBack }) {
   const zipBookId = (digital && digital.book_id) || (print && print.book_id);
   const zipVersionLabel = (digital && digital.version_label) || (print && print.version_label);
   
-  // Handle Read Book - redirect to URL only
+  // Iframe state for reading book
+  const [showIframe, setShowIframe] = useState(false);
+  const [iframeUrl, setIframeUrl] = useState(null);
+
+  // Handle Read Book - show URL in iframe
   const handleReadBook = () => {
     // Check URL from group, digital, or print (in that order)
     const url = group.url || digital?.url || print?.url;
     if (url) {
-      // If URL exists, open it in a new tab
-      window.open(url, '_blank', 'noopener,noreferrer');
+      // Set URL and show iframe overlay
+      setIframeUrl(url);
+      setShowIframe(true);
+      // Close sidebar automatically by setting localStorage and dispatching event
+      localStorage.setItem("sidebarCollapsedUser", "true");
+      window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { collapsed: true } }));
     } else {
       // Show alert if no URL is available
       alert('This book does not have a URL configured. Please contact the administrator.');
     }
   };
+
+  // Close iframe
+  const handleCloseIframe = () => {
+    setShowIframe(false);
+    setIframeUrl(null);
+    // Sidebar can be reopened manually by user clicking menu icon
+  };
+
+  // Handle Escape key to close iframe
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showIframe) {
+        setShowIframe(false);
+        setIframeUrl(null);
+      }
+    };
+    if (showIframe) {
+      document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll when iframe is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'auto';
+    };
+  }, [showIframe]);
 
   // Read More logic for description
   const [showFullDesc, setShowFullDesc] = useState(false);
@@ -330,6 +349,63 @@ function BookDetail({ group, onGoBack }) {
 
   return (
     <div className="book-detail-page issued-books">
+      {/* Iframe Overlay for Reading Book */}
+      {showIframe && iframeUrl && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: '#fff',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          {/* Close Button Bar */}
+          <div style={{
+            padding: '10px 20px',
+            backgroundColor: '#f8f9fa',
+            borderBottom: '1px solid #e2e8f0',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}>
+            <button
+              onClick={handleCloseIframe}
+              style={{
+                padding: '8px 20px',
+                backgroundColor: '#dc3545',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 600,
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#c82333'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#dc3545'}
+            >
+              Close
+            </button>
+          </div>
+          {/* Iframe */}
+          <iframe
+            src={iframeUrl}
+            style={{
+              width: '100%',
+              height: 'calc(100vh - 60px)',
+              border: 'none',
+              flex: 1
+            }}
+            title="Book Reader"
+            allowFullScreen
+          />
+        </div>
+      )}
+      
       <div className="book-detail-card">
         <div className="breadcrumb">
           <span className="breadcrumb-link" style={{ cursor: "default" }}>Dashboard</span>{" "}
