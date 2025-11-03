@@ -73,10 +73,14 @@ const Books = () => {
   };
 
   // --- Helper: Group books by logical book (digital/print) ---
+  // Groups books with same title, ISBN, grade, version, AND book_id
+  // This allows multiple logical books while still grouping digital/print formats of the same book
   function groupBooksByLogicalBook(books) {
     const grouped = {};
     for (const book of books) {
-      const key = [book.title, book.isbn_code, book.grade_id, book.version_label].join('|');
+      // Include book_id in the key to ensure each book entry shows separately
+      // Books with same title/ISBN but different book_id will be shown separately
+      const key = [book.title, book.isbn_code, book.grade_id, book.version_label, book.book_id].join('|');
       if (!grouped[key]) {
         grouped[key] = {
           title: book.title,
@@ -84,6 +88,7 @@ const Books = () => {
           grade_id: book.grade_id,
           grade_name: book.grade_name,
           version_label: book.version_label,
+          book_id: book.book_id, // Keep track of the primary book_id
           digital: null,
           print: null,
           // ...other shared fields
@@ -105,12 +110,21 @@ const Books = () => {
         if (book.url && !grouped[key].url) {
           grouped[key].url = book.url;
         }
-      }
-      if (formatName.includes('print')) {
+      } else if (formatName.includes('print')) {
         grouped[key].print = book;
         // If print has URL and grouped doesn't, use it
         if (book.url && !grouped[key].url) {
           grouped[key].url = book.url;
+        }
+      } else {
+        // If format doesn't match digital or print, assign to digital as fallback
+        // This ensures all books are displayed
+        if (!grouped[key].digital) {
+          grouped[key].digital = book;
+          // If book has URL and grouped doesn't, use it
+          if (book.url && !grouped[key].url) {
+            grouped[key].url = book.url;
+          }
         }
       }
     }
@@ -137,6 +151,7 @@ const Books = () => {
         const languageMap = new Map(languagesRes.data.map((l) => [l.language_id, l.language_name]));
         const bookTypeMap = new Map(bookTypesRes.data.map((bt) => [bt.book_type_id, bt.book_type_title]));
 
+        console.log(`[bookDisplay] Raw books received from API: ${booksRes.data.books.length}`);
         const booksWithExtras = booksRes.data.books.map((book) => ({
           ...book,
           grade_name: gradeMap.get(book.grade_id) || 'N/A',
@@ -149,6 +164,7 @@ const Books = () => {
         }));
 
         const groupedBooks = groupBooksByLogicalBook(booksWithExtras);
+        console.log(`[bookDisplay] Books after grouping: ${groupedBooks.length}`);
         setBooks(groupedBooks);
         setFilteredBooks(groupedBooks);
         setGrades(gradesRes.data);
@@ -295,13 +311,18 @@ const Books = () => {
           {filteredBooks.length === 0 ? (<p className="bookx-no-books">No books match selected filters.</p>) : (
             filteredBooks.map((group) => {
               const main = group.digital || group.print;
+              // Skip if no main book is available (shouldn't happen with our fix, but safety check)
+              if (!main) {
+                console.warn('[bookDisplay] Book group without digital or print format:', group);
+                return null;
+              }
               // Ensure URL is available from group or main book
               const bookUrl = group.url || main?.url || null;
               if (main && !main.url && bookUrl) {
                 main.url = bookUrl;
               }
               return (
-                <div key={group.title + group.isbn_code + group.grade_id + group.version_label} className="bookx-card" onClick={() => handleSelectBook(main)}>
+                <div key={`${group.book_id || group.title}-${group.isbn_code}-${group.grade_id}-${group.version_label}`} className="bookx-card" onClick={() => handleSelectBook(main)}>
                   <div className="bookx-card-image-container">
                     <PDFCoverPreview 
                       pdfUrl={`/api/books/${main.book_id}/stream-cover`} 

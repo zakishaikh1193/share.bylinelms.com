@@ -315,9 +315,9 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
 
   const [selected, setSelected] = useState([]);
 
-  // Helper to get group key
+  // Helper to get group key (includes book_id to ensure uniqueness)
   const getGroupKey = (group) =>
-    [group.title, group.isbn_code, group.grade_id, group.version_label].join('|');
+    [group.title, group.isbn_code, group.grade_id, group.version_label, group.book_id].join('|');
 
   // Toggle selection by group key
   const toggle = (group) => {
@@ -406,6 +406,14 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
                 format_name
               } = book;
 
+              // Get the main book (digital or print) for rendering
+              const main = book.digital || book.print;
+              // Skip if no main book is available (shouldn't happen with our fix, but safety check)
+              if (!main) {
+                console.warn('[ManageAccess] Book group without digital or print format:', book);
+                return null;
+              }
+
               return (
                 <div
                   key={getGroupKey(book)}
@@ -414,7 +422,7 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
                   style={{ width: 285 }}
                 >
                   <PDFCoverPreview
-                    pdfUrl={`/api/books/${(book.digital || book.print).book_id}/stream-cover`}
+                    pdfUrl={`/api/books/${main.book_id}/stream-cover`}
                     width={250}
                     height={260}
                     bookTitle={title}
@@ -452,10 +460,14 @@ const lowerCaseSearchTerm = (searchTerm || '').toLowerCase();
 };
 
 // --- Helper: Group books by logical book (digital/print) ---
+// Groups books with same title, ISBN, grade, version, AND book_id
+// This allows multiple logical books while still grouping digital/print formats of the same book
 function groupBooksByLogicalBook(books) {
   const grouped = {};
   for (const book of books) {
-    const key = [book.title, book.isbn_code, book.grade_id, book.version_label].join('|');
+    // Include book_id in the key to ensure each book entry shows separately
+    // Books with same title/ISBN but different book_id will be shown separately
+    const key = [book.title, book.isbn_code, book.grade_id, book.version_label, book.book_id].join('|');
     if (!grouped[key]) {
       grouped[key] = {
         title: book.title,
@@ -463,6 +475,7 @@ function groupBooksByLogicalBook(books) {
         grade_id: book.grade_id,
         grade_level: book.grade_level,
         version_label: book.version_label,
+        book_id: book.book_id, // Keep track of the primary book_id
         digital: null,
         print: null,
         description: book.description,
@@ -482,8 +495,17 @@ function groupBooksByLogicalBook(books) {
       };
     }
     const formatName = (book.format_name || '').toLowerCase();
-    if (formatName.includes('digital')) grouped[key].digital = book;
-    if (formatName.includes('print')) grouped[key].print = book;
+    if (formatName.includes('digital')) {
+      grouped[key].digital = book;
+    } else if (formatName.includes('print')) {
+      grouped[key].print = book;
+    } else {
+      // If format doesn't match digital or print, assign to digital as fallback
+      // This ensures all books are displayed
+      if (!grouped[key].digital) {
+        grouped[key].digital = book;
+      }
+    }
   }
   return Object.values(grouped);
 }
