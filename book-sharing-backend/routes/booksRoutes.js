@@ -8,6 +8,7 @@ const { authenticateAdmin, authenticateUserOrAdmin } = require('../middlewares/a
 
 // BOOK creation and viewing
 router.post('/', authenticateAdmin, bookController.createBook);
+router.post('/upload-csv', authenticateAdmin, upload.single('csv_file'), bookController.uploadBooksFromCSV);
 router.get('/', authenticateUserOrAdmin, bookController.getBooks); 
 router.get('/grouped', authenticateUserOrAdmin, bookController.getGroupedBooks);
 

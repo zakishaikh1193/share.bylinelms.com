@@ -6,6 +6,9 @@ const fs = require("fs");
 const { logActivity } = require('../utils/logger');
 const sharp = require('sharp');
 const { PDFDocument } = require('pdf-lib');
+const csv = require('csv-parser');
+const XLSX = require('xlsx');
+const axios = require('axios');
 
 module.exports = {
 
@@ -66,7 +69,22 @@ streamOptimizedCover: async (req, res) => {
   try {
     const { bookId } = req.params;
 
-    // 1. Serve cached first-page cover if available
+    // 1. First, try to get an uploaded cover
+    const [[cover]] = await pool.query(
+      "SELECT uploaded_link FROM covers WHERE book_id = ? ORDER BY cover_id DESC LIMIT 1",
+      [bookId]
+    );
+
+    if (cover && cover.uploaded_link) {
+      const filePath = path.resolve(__dirname, "..", cover.uploaded_link);
+      if (fs.existsSync(filePath)) {
+        res.setHeader("Content-Type", "application/pdf");
+        fs.createReadStream(filePath).pipe(res);
+        return;
+      }
+    }
+
+    // 2. Serve cached first-page cover if available
     const coversDir = path.resolve(__dirname, "..", "covers");
     if (!fs.existsSync(coversDir)) fs.mkdirSync(coversDir);
     const cachePath = path.join(coversDir, `firstpage_${bookId}.pdf`);
@@ -75,32 +93,113 @@ streamOptimizedCover: async (req, res) => {
       return fs.createReadStream(cachePath).pipe(res);
     }
 
-    // 2. Generate first-page cover from PDF if not cached
+    // 3. Generate first-page cover from PDF if not cached
     const [[version]] = await pool.query(
-      `SELECT uploaded_link FROM book_versions WHERE book_id = ? ORDER BY version_id DESC LIMIT 1`,
+      `SELECT uploaded_link FROM book_versions WHERE book_id = ? AND uploaded_link IS NOT NULL ORDER BY version_id DESC LIMIT 1`,
       [bookId]
     );
-    if (!version || !fs.existsSync(version.uploaded_link)) {
-      return res.status(404).json({ error: "No PDF found" });
-    }
-    const pdfBytes = fs.readFileSync(version.uploaded_link);
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    if (pdfDoc.getPageCount() === 0) {
-      return res.status(404).json({ error: "PDF has no pages" });
-    }
-    const coverDoc = await PDFDocument.create();
-    const [firstPage] = await coverDoc.copyPages(pdfDoc, [0]);
-    coverDoc.addPage(firstPage);
-    const coverBytes = await coverDoc.save();
+    
+    if (version && version.uploaded_link) {
+      const pdfPath = path.isAbsolute(version.uploaded_link)
+        ? version.uploaded_link
+        : path.resolve(__dirname, '..', version.uploaded_link);
+      
+      if (fs.existsSync(pdfPath)) {
+        try {
+          const pdfBytes = fs.readFileSync(pdfPath);
+          const pdfDoc = await PDFDocument.load(pdfBytes);
+          
+          if (pdfDoc.getPageCount() > 0) {
+            const coverDoc = await PDFDocument.create();
+            const [firstPage] = await coverDoc.copyPages(pdfDoc, [0]);
+            coverDoc.addPage(firstPage);
+            const coverBytes = await coverDoc.save();
 
-    // Cache the generated cover
-    fs.writeFileSync(cachePath, coverBytes);
+            // Cache the generated cover
+            fs.writeFileSync(cachePath, coverBytes);
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Length", coverBytes.length);
-    res.send(Buffer.from(coverBytes));
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader("Content-Length", coverBytes.length);
+            res.setHeader("Cache-Control", "public, max-age=86400");
+            res.send(Buffer.from(coverBytes));
+            return;
+          }
+        } catch (pdfErr) {
+          console.log('PDF first page extraction failed:', pdfErr.message);
+          // Fall through to Heyzine API
+        }
+      }
+    }
+
+    // 4. If no PDF, check if book has a URL and fetch thumbnail from Heyzine API
+    const [[book]] = await pool.query(
+      `SELECT url FROM books WHERE book_id = ?`,
+      [bookId]
+    );
+
+    if (book && book.url) {
+      const heyzineApiKey = process.env.HEYZINE_API;
+      
+      if (!heyzineApiKey) {
+        console.error(`[Book ${bookId}] HEYZINE_API environment variable is not set`);
+        return res.status(404).json({ error: "Cover not found" });
+      }
+
+      try {
+        console.log(`[Book ${bookId}] Fetching Heyzine API for URL: ${book.url}`);
+        // Fetch flipbook list from Heyzine API
+        const response = await axios.get('https://heyzine.com/api1/flipbook-list', {
+          headers: {
+            'Authorization': `Bearer ${heyzineApiKey}`
+          },
+          timeout: 10000 // 10 second timeout
+        });
+
+        const flipbooks = response.data;
+        console.log(`[Book ${bookId}] Heyzine API returned ${Array.isArray(flipbooks) ? flipbooks.length : 0} flipbooks`);
+        
+        if (Array.isArray(flipbooks)) {
+          // Find the flipbook with matching custom URL
+          const bookUrlNormalized = book.url.toLowerCase().trim();
+          const matchingFlipbook = flipbooks.find(fb => {
+            if (!fb.links || !fb.links.custom) return false;
+            const flipbookUrlNormalized = fb.links.custom.toLowerCase().trim();
+            return flipbookUrlNormalized === bookUrlNormalized;
+          });
+
+          if (matchingFlipbook && matchingFlipbook.links && matchingFlipbook.links.thumbnail) {
+            const thumbnailUrl = matchingFlipbook.links.thumbnail;
+            console.log(`[Book ${bookId}] Found matching flipbook, thumbnail URL: ${thumbnailUrl}`);
+            
+            // Fetch and stream the thumbnail image
+            const thumbnailResponse = await axios.get(thumbnailUrl, {
+              responseType: 'stream',
+              timeout: 10000
+            });
+
+            res.setHeader("Content-Type", thumbnailResponse.headers['content-type'] || 'image/jpeg');
+            res.setHeader("Cache-Control", "public, max-age=86400"); // Cache for 1 day
+            thumbnailResponse.data.pipe(res);
+            return;
+          } else {
+            console.log(`[Book ${bookId}] No matching flipbook found. Book URL: ${book.url}, Available URLs: ${flipbooks.map(fb => fb.links?.custom).join(', ')}`);
+          }
+        }
+      } catch (heyzineErr) {
+        console.error(`[Book ${bookId}] Heyzine API fetch failed:`, heyzineErr.message);
+        if (heyzineErr.response) {
+          console.error(`[Book ${bookId}] Heyzine API error status: ${heyzineErr.response.status}, data:`, heyzineErr.response.data);
+        }
+        // Fall through to 404
+      }
+    } else {
+      console.log(`[Book ${bookId}] No URL found for book`);
+    }
+
+    // If all fallbacks fail, return 404
+    return res.status(404).json({ error: "Cover not found" });
   } catch (err) {
-    console.error("Error streaming first page as cover:", err);
+    console.error("Error streaming optimized cover:", err);
     res.status(500).json({ error: err.message });
   }
 },
@@ -109,18 +208,112 @@ streamOptimizedCover: async (req, res) => {
   try {
     const { bookId } = req.params;
 
+    // 1. First, try to get an uploaded cover
     const [[cover]] = await pool.query(
       "SELECT uploaded_link FROM covers WHERE book_id = ? ORDER BY cover_id DESC LIMIT 1",
       [bookId]
     );
 
-    if (!cover) return res.status(404).json({ error: "Cover not found" });
+    if (cover && cover.uploaded_link) {
+      const filePath = path.resolve(__dirname, "..", cover.uploaded_link);
+      if (fs.existsSync(filePath)) {
+        res.setHeader("Content-Type", "application/pdf");
+        fs.createReadStream(filePath).pipe(res);
+        return;
+      }
+    }
 
-    const filePath = path.resolve(__dirname, "..", cover.uploaded_link);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ error: "File not found" });
+    // 2. If no cover, check if there's a PDF version (extract first page as cover)
+    const [[version]] = await pool.query(
+      `SELECT uploaded_link FROM book_versions WHERE book_id = ? AND uploaded_link IS NOT NULL ORDER BY version_id DESC LIMIT 1`,
+      [bookId]
+    );
 
-    res.setHeader("Content-Type", "application/pdf");
-    fs.createReadStream(filePath).pipe(res);
+    if (version && version.uploaded_link) {
+      const pdfPath = path.isAbsolute(version.uploaded_link)
+        ? version.uploaded_link
+        : path.resolve(__dirname, '..', version.uploaded_link);
+      
+      if (fs.existsSync(pdfPath)) {
+        // Extract first page from PDF and serve as cover
+        try {
+          const pdfBytes = fs.readFileSync(pdfPath);
+          const pdfDoc = await PDFDocument.load(pdfBytes);
+          
+          if (pdfDoc.getPageCount() > 0) {
+            // Create a new PDF with only the first page
+            const newPdf = await PDFDocument.create();
+            const [firstPage] = await newPdf.copyPages(pdfDoc, [0]);
+            newPdf.addPage(firstPage);
+            const pdfData = await newPdf.save();
+            
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader("Cache-Control", "public, max-age=86400");
+            res.send(Buffer.from(pdfData));
+            return;
+          }
+        } catch (pdfErr) {
+          console.log('PDF first page extraction failed:', pdfErr.message);
+          // Fall through to Heyzine API
+        }
+      }
+    }
+
+    // 3. If no PDF, check if book has a URL and fetch thumbnail from Heyzine API
+    const [[book]] = await pool.query(
+      `SELECT url FROM books WHERE book_id = ?`,
+      [bookId]
+    );
+
+    if (book && book.url) {
+      const heyzineApiKey = process.env.HEYZINE_API;
+      
+      if (!heyzineApiKey) {
+        console.error('HEYZINE_API environment variable is not set');
+        return res.status(404).json({ error: "Cover not found" });
+      }
+
+      try {
+        // Fetch flipbook list from Heyzine API
+        const response = await axios.get('https://heyzine.com/api1/flipbook-list', {
+          headers: {
+            'Authorization': `Bearer ${heyzineApiKey}`
+          },
+          timeout: 10000 // 10 second timeout
+        });
+
+        const flipbooks = response.data;
+        if (Array.isArray(flipbooks)) {
+          // Find the flipbook with matching custom URL
+          const matchingFlipbook = flipbooks.find(fb => 
+            fb.links && 
+            fb.links.custom && 
+            fb.links.custom.toLowerCase() === book.url.toLowerCase().trim()
+          );
+
+          if (matchingFlipbook && matchingFlipbook.links && matchingFlipbook.links.thumbnail) {
+            const thumbnailUrl = matchingFlipbook.links.thumbnail;
+            
+            // Fetch and stream the thumbnail image
+            const thumbnailResponse = await axios.get(thumbnailUrl, {
+              responseType: 'stream',
+              timeout: 10000
+            });
+
+            res.setHeader("Content-Type", thumbnailResponse.headers['content-type'] || 'image/jpeg');
+            res.setHeader("Cache-Control", "public, max-age=86400"); // Cache for 1 day
+            thumbnailResponse.data.pipe(res);
+            return;
+          }
+        }
+      } catch (heyzineErr) {
+        console.error('Heyzine API fetch failed:', heyzineErr.message);
+        // Fall through to 404
+      }
+    }
+
+    // If all fallbacks fail, return 404
+    return res.status(404).json({ error: "Cover not found" });
   } catch (err) {
     console.error("Error streaming cover:", err);
     res.status(500).json({ error: err.message });
@@ -753,20 +946,95 @@ downloadBookVersion: async (req, res) => {
     if (!control.can_download && req.user.role !== 'admin')
       return res.status(403).json({ error: 'Download permission denied' });
 
-    // Step 3: Stream file directly
+    // Step 3: Try to stream file directly
     const filePath = version.uploaded_link;
-    if (!fs.existsSync(filePath)) {
-      console.error("File not found:", filePath);
-      return res.status(404).json({ error: "File not found" });
+    
+    if (filePath && fs.existsSync(filePath)) {
+      // File exists, stream it directly
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      // --- LOG ACTIVITY ---
+      logActivity(user_id, 'DOWNLOAD_PDF', { bookId: parseInt(bookId), bookTitle, versionLabel }, ip);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${path.basename(filePath)}"`);
+      fs.createReadStream(filePath).pipe(res);
+      return;
     }
 
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    // --- LOG ACTIVITY ---
-    logActivity(user_id, 'DOWNLOAD_PDF', { bookId: parseInt(bookId), bookTitle, versionLabel }, ip);
+    // Step 4: If file doesn't exist, try to fetch from Heyzine API
+    console.log(`[Book ${bookId}] File not found locally, checking Heyzine API...`);
+    const [[bookWithUrl]] = await pool.query(
+      `SELECT url FROM books WHERE book_id = ?`,
+      [bookId]
+    );
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${path.basename(filePath)}"`);
-    fs.createReadStream(filePath).pipe(res);
+    if (bookWithUrl && bookWithUrl.url) {
+      const heyzineApiKey = process.env.HEYZINE_API;
+      
+      if (!heyzineApiKey) {
+        console.error(`[Book ${bookId}] HEYZINE_API environment variable is not set`);
+        return res.status(404).json({ error: "File not found" });
+      }
+
+      try {
+        console.log(`[Book ${bookId}] Fetching Heyzine API for URL: ${bookWithUrl.url}`);
+        // Fetch flipbook list from Heyzine API
+        const response = await axios.get('https://heyzine.com/api1/flipbook-list', {
+          headers: {
+            'Authorization': `Bearer ${heyzineApiKey}`
+          },
+          timeout: 10000 // 10 second timeout
+        });
+
+        const flipbooks = response.data;
+        console.log(`[Book ${bookId}] Heyzine API returned ${Array.isArray(flipbooks) ? flipbooks.length : 0} flipbooks`);
+        
+        if (Array.isArray(flipbooks)) {
+          // Find the flipbook with matching custom URL
+          const bookUrlNormalized = bookWithUrl.url.toLowerCase().trim();
+          const matchingFlipbook = flipbooks.find(fb => {
+            if (!fb.links || !fb.links.custom) return false;
+            const flipbookUrlNormalized = fb.links.custom.toLowerCase().trim();
+            return flipbookUrlNormalized === bookUrlNormalized;
+          });
+
+          if (matchingFlipbook && matchingFlipbook.links && matchingFlipbook.links.pdf) {
+            const pdfUrl = matchingFlipbook.links.pdf;
+            console.log(`[Book ${bookId}] Found matching flipbook, PDF URL: ${pdfUrl}`);
+            
+            // Log activity
+            const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            logActivity(user_id, 'DOWNLOAD_PDF', { bookId: parseInt(bookId), bookTitle, versionLabel, source: 'heyzine_api' }, ip);
+            
+            // Fetch and stream the PDF from Heyzine
+            const pdfResponse = await axios.get(pdfUrl, {
+              responseType: 'stream',
+              timeout: 30000 // 30 second timeout for PDF download
+            });
+
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader("Content-Disposition", `attachment; filename="Book_${bookId}_${versionLabel}.pdf"`);
+            res.setHeader("Cache-Control", "public, max-age=3600"); // Cache for 1 hour
+            pdfResponse.data.pipe(res);
+            return;
+          } else {
+            console.log(`[Book ${bookId}] No matching flipbook found. Book URL: ${bookWithUrl.url}, Available URLs: ${flipbooks.map(fb => fb.links?.custom).join(', ')}`);
+          }
+        }
+      } catch (heyzineErr) {
+        console.error(`[Book ${bookId}] Heyzine API fetch failed:`, heyzineErr.message);
+        if (heyzineErr.response) {
+          console.error(`[Book ${bookId}] Heyzine API error status: ${heyzineErr.response.status}, data:`, heyzineErr.response.data);
+        }
+        // Fall through to 404
+      }
+    } else {
+      console.log(`[Book ${bookId}] No URL found for book`);
+    }
+
+    // If all fallbacks fail, return 404
+    console.error(`[Book ${bookId}] File not found and no Heyzine API fallback available`);
+    return res.status(404).json({ error: "File not found" });
 
   } catch (err) {
     console.error("Download failed:", err);
@@ -1414,6 +1682,380 @@ approveAccessRequest: async (req, res) => {
       }
       res.json({ books: Object.values(grouped) });
     } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  // CSV Upload for bulk book creation
+  uploadBooksFromCSV: async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'CSV or Excel file is required' });
+      }
+
+      const created_by = req.user.user_id;
+      const results = {
+        success: [],
+        errors: []
+      };
+
+      // Helper function to normalize strings for flexible matching
+      const normalizeString = (str) => {
+        if (!str) return '';
+        return str.toString().toLowerCase().trim().replace(/\s+/g, '');
+      };
+
+      // Pre-fetch all lookup tables for efficiency
+      const [grades] = await pool.query('SELECT grade_id, grade_level FROM grades');
+      const [subjects] = await pool.query('SELECT subject_id, subject_name FROM subjects');
+      const [languages] = await pool.query('SELECT language_id, language_name FROM languages');
+      const [standards] = await pool.query('SELECT standard_id, standard_name FROM standards');
+      const [booktypes] = await pool.query('SELECT book_type_id, book_type_title FROM booktypes');
+      const [formats] = await pool.query('SELECT format_id, format_name FROM book_formats');
+      const [existingTags] = await pool.query('SELECT tag_id, tag_name FROM tags');
+
+      // Helper to find ID from pre-fetched data
+      const findIdFromCache = (cache, nameColumn, idColumn, searchValue) => {
+        if (!searchValue) return null;
+        const normalizedSearch = normalizeString(searchValue);
+        
+        // Try exact match
+        let match = cache.find(r => normalizeString(r[nameColumn]) === normalizedSearch);
+        if (match) return match[idColumn];
+        
+        // Try partial match (contains or is contained)
+        match = cache.find(r => {
+          const cacheValue = normalizeString(r[nameColumn]);
+          return cacheValue.includes(normalizedSearch) || normalizedSearch.includes(cacheValue);
+        });
+        if (match) return match[idColumn];
+        
+        return null;
+      };
+
+      // Parse CSV or Excel file
+      const csvRows = [];
+      const fileName = req.file.originalname.toLowerCase();
+      
+      if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
+        // Parse Excel file
+        const workbook = XLSX.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const data = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        
+        // Helper to normalize strings (remove spaces, lowercase)
+        const normalizeForMatch = (str) => {
+          if (!str) return '';
+          return String(str).toLowerCase().trim().replace(/\s+/g, '').replace(/\t/g, '');
+        };
+        
+        // Map Excel rows to our format - handle various column name formats
+        data.forEach((row, idx) => {
+          // Helper to get value with multiple possible keys (case-insensitive, handles spaces/tabs)
+          const getValue = (...keys) => {
+            // First, try exact matches (with various spacing variations)
+            for (const key of keys) {
+              if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
+                return String(row[key]).trim();
+              }
+              // Try with trailing space
+              if (row[key + ' '] !== undefined && row[key + ' '] !== null && String(row[key + ' ']).trim() !== '') {
+                return String(row[key + ' ']).trim();
+              }
+              // Try with trailing tab
+              if (row[key + '\t'] !== undefined && row[key + '\t'] !== null && String(row[key + '\t']).trim() !== '') {
+                return String(row[key + '\t']).trim();
+              }
+            }
+            
+            // Then try case-insensitive match across all row keys
+            const normalizedKeys = keys.map(normalizeForMatch);
+            for (const rowKey of Object.keys(row)) {
+              const normalizedRowKey = normalizeForMatch(rowKey);
+              if (normalizedKeys.includes(normalizedRowKey)) {
+                const value = row[rowKey];
+                if (value !== undefined && value !== null && String(value).trim() !== '') {
+                  return String(value).trim();
+                }
+              }
+            }
+            
+            return '';
+          };
+          
+          // Helper to parse tags from quoted string
+          const parseTags = (tagsString) => {
+            if (!tagsString || typeof tagsString !== 'string') return [];
+            // Remove surrounding quotes if present
+            let cleaned = tagsString.trim();
+            if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || 
+                (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+              cleaned = cleaned.slice(1, -1);
+            }
+            // Split by comma and clean each tag
+            return cleaned.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+          };
+
+          csvRows.push({
+            title: getValue('Book title', 'Book Title', 'Title', 'book title', 'BOOK TITLE'),
+            description: getValue('Description', 'description', 'DESCRIPTION'),
+            grade: getValue('Descriptive Grade', 'descriptive grade', 'Grade', 'grade', 'GRADE'),
+            subject: getValue('Subject', 'subject', 'SUBJECT'),
+            language: getValue('Language', 'language', 'LANGUAGE'),
+            standard: getValue('Standard', 'standard', 'STANDARD'),
+            bookType: getValue('Book Type', 'Book type', 'book type', 'BookType', 'booktype', 'BOOK TYPE'),
+            format: getValue('Book Formats', 'Book Format', 'Format', 'format', 'FORMAT', 'book formats', 'book format'),
+            version: getValue('Version', 'version', 'VERSION'),
+            isbn: getValue('ISBN', 'isbn', 'ISBN ', 'isbn ', 'ISBN\t', 'isbn\t'),
+            url: getValue('URL', 'url', 'Url', 'URL '),
+            tags: parseTags(getValue('Tags', 'tags', 'TAGS', 'Tag', 'tag'))
+          });
+        });
+      } else {
+        // Parse CSV file (handle both comma and tab delimited)
+        // First, detect the delimiter by reading the first line
+        const fileContent = fs.readFileSync(req.file.path, 'utf8');
+        const firstLine = fileContent.split('\n')[0];
+        const delimiter = firstLine.includes('\t') ? '\t' : ',';
+        
+        await new Promise((resolve, reject) => {
+          fs.createReadStream(req.file.path)
+            .pipe(csv({ separator: delimiter }))
+            .on('data', (row) => {
+              // Map CSV columns (handle different possible column names)
+              // Expected format: Book title, Description, Grade, Subject, Language, Standard, Book Type, Version, ISBN, URL
+              // Helper to normalize strings (remove spaces, lowercase)
+              const normalizeForMatch = (str) => {
+                if (!str) return '';
+                return String(str).toLowerCase().trim().replace(/\s+/g, '').replace(/\t/g, '');
+              };
+              
+              // Helper to get value with multiple possible keys (case-insensitive, handles spaces/tabs)
+              const getValue = (...keys) => {
+                // First, try exact matches (with various spacing variations)
+                for (const key of keys) {
+                  if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
+                    return String(row[key]).trim();
+                  }
+                  // Try with trailing space
+                  if (row[key + ' '] !== undefined && row[key + ' '] !== null && String(row[key + ' ']).trim() !== '') {
+                    return String(row[key + ' ']).trim();
+                  }
+                  // Try with trailing tab
+                  if (row[key + '\t'] !== undefined && row[key + '\t'] !== null && String(row[key + '\t']).trim() !== '') {
+                    return String(row[key + '\t']).trim();
+                  }
+                }
+                
+                // Then try case-insensitive match across all row keys
+                const normalizedKeys = keys.map(normalizeForMatch);
+                for (const rowKey of Object.keys(row)) {
+                  const normalizedRowKey = normalizeForMatch(rowKey);
+                  if (normalizedKeys.includes(normalizedRowKey)) {
+                    const value = row[rowKey];
+                    if (value !== undefined && value !== null && String(value).trim() !== '') {
+                      return String(value).trim();
+                    }
+                  }
+                }
+                
+                return '';
+              };
+              
+              // Helper to parse tags from quoted string
+              const parseTags = (tagsString) => {
+                if (!tagsString || typeof tagsString !== 'string') return [];
+                // Remove surrounding quotes if present
+                let cleaned = tagsString.trim();
+                if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || 
+                    (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+                  cleaned = cleaned.slice(1, -1);
+                }
+                // Split by comma and clean each tag
+                return cleaned.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+              };
+
+              csvRows.push({
+                title: getValue('Book title', 'Book Title', 'Title', 'book title', 'BOOK TITLE'),
+                description: getValue('Description', 'description', 'DESCRIPTION'),
+                grade: getValue('Descriptive Grade', 'descriptive grade', 'Grade', 'grade', 'GRADE'),
+                subject: getValue('Subject', 'subject', 'SUBJECT'),
+                language: getValue('Language', 'language', 'LANGUAGE'),
+                standard: getValue('Standard', 'standard', 'STANDARD'),
+                bookType: getValue('Book Type', 'Book type', 'book type', 'BookType', 'booktype', 'BOOK TYPE'),
+                format: getValue('Book Formats', 'Book Format', 'Format', 'format', 'FORMAT', 'book formats', 'book format'),
+                version: getValue('Version', 'version', 'VERSION'),
+                isbn: getValue('ISBN', 'isbn', 'ISBN ', 'isbn ', 'ISBN\t', 'isbn\t'),
+                url: getValue('URL', 'url', 'Url', 'URL '),
+                tags: parseTags(getValue('Tags', 'tags', 'TAGS', 'Tag', 'tag'))
+              });
+            })
+            .on('end', resolve)
+            .on('error', reject);
+        });
+      }
+
+      // Delete the uploaded file after parsing
+      fs.unlinkSync(req.file.path);
+
+      // Process each row
+      for (let i = 0; i < csvRows.length; i++) {
+        const row = csvRows[i];
+        const rowNum = i + 2; // +2 because row 1 is header, and arrays are 0-indexed
+
+        try {
+          // Extract and validate required fields
+          const title = (row.title || '').toString().trim();
+          const version = (row.version || '').toString().trim();
+          const isbn = (row.isbn || '').toString().trim();
+          
+          if (!title || !version || !isbn) {
+            const missing = [];
+            if (!title) missing.push('title');
+            if (!version) missing.push('version');
+            if (!isbn) missing.push('ISBN');
+            results.errors.push({
+              row: rowNum,
+              error: `Missing required fields: ${missing.join(', ')}`
+            });
+            continue;
+          }
+
+          // Lookup IDs
+          const grade_id = findIdFromCache(grades, 'grade_level', 'grade_id', row.grade);
+          const subject_id = findIdFromCache(subjects, 'subject_name', 'subject_id', row.subject);
+          const language_id = findIdFromCache(languages, 'language_name', 'language_id', row.language);
+          const standard_id = findIdFromCache(standards, 'standard_name', 'standard_id', row.standard);
+          const booktype_id = findIdFromCache(booktypes, 'book_type_title', 'book_type_id', row.bookType);
+          
+          // Lookup format (parse "Digital" or "Print" or "digital"/"print")
+          let format_id = null;
+          if (row.format) {
+            const formatValue = normalizeString(row.format);
+            const format = formats.find(f => {
+              const formatName = normalizeString(f.format_name);
+              return formatName.includes(formatValue) || formatValue.includes(formatName);
+            });
+            format_id = format ? format.format_id : null;
+          }
+          
+          // Default to Digital format if not specified or not found
+          if (!format_id) {
+            const defaultFormat = formats.find(f => normalizeString(f.format_name).includes('digital')) || formats[0];
+            format_id = defaultFormat ? defaultFormat.format_id : null;
+          }
+
+          // Validate that required lookups succeeded
+          const missingFields = [];
+          if (row.grade && !grade_id) missingFields.push('Grade');
+          if (row.subject && !subject_id) missingFields.push('Subject');
+          if (row.language && !language_id) missingFields.push('Language');
+          if (row.standard && !standard_id) missingFields.push('Standard');
+          if (row.bookType && !booktype_id) missingFields.push('Book Type');
+
+          if (missingFields.length > 0) {
+            results.errors.push({
+              row: rowNum,
+              error: `Could not find: ${missingFields.join(', ')}`
+            });
+            continue;
+          }
+
+          // Create book entry
+          const [bookResult] = await pool.query(
+            `INSERT INTO books (
+              title, description, grade_id, subject_id, language_id,
+              standard_id, country_id, booktype_id, format_id, url,
+              created_by, created_at, last_updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+            [
+              title,
+              (row.description || '').toString().trim() || null,
+              grade_id,
+              subject_id,
+              language_id,
+              standard_id,
+              null, // country_id is null
+              booktype_id,
+              format_id,
+              (row.url || '').toString().trim() || null,
+              created_by
+            ]
+          );
+
+          const book_id = bookResult.insertId;
+
+          // Create book version entry (without actual file upload)
+          await pool.query(
+            `INSERT INTO book_versions (book_id, version_label, isbn_code, uploaded_link, zip_link, uploaded_by) 
+             VALUES (?, ?, ?, NULL, NULL, ?)`,
+            [book_id, version, isbn, created_by]
+          );
+
+          // Handle tags: create if they don't exist, then link to book
+          if (row.tags && Array.isArray(row.tags) && row.tags.length > 0) {
+            const tagIds = [];
+            for (const tagName of row.tags) {
+              if (!tagName || typeof tagName !== 'string' || tagName.trim().length === 0) continue;
+              
+              const normalizedTagName = tagName.trim().toLowerCase();
+              // Check if tag exists (case-insensitive)
+              let existingTag = existingTags.find(t => t.tag_name.toLowerCase() === normalizedTagName);
+              
+              if (existingTag) {
+                tagIds.push(existingTag.tag_id);
+              } else {
+                // Create new tag
+                try {
+                  const [tagResult] = await pool.query(
+                    'INSERT INTO tags (tag_name) VALUES (?)',
+                    [tagName.trim()]
+                  );
+                  const newTagId = tagResult.insertId;
+                  tagIds.push(newTagId);
+                  // Add to cache for subsequent rows
+                  existingTags.push({ tag_id: newTagId, tag_name: tagName.trim() });
+                } catch (tagErr) {
+                  console.error(`Error creating tag "${tagName}":`, tagErr.message);
+                  // Continue with other tags even if one fails
+                }
+              }
+            }
+            
+            // Link tags to book
+            if (tagIds.length > 0) {
+              const tagValues = tagIds.map(tag_id => [book_id, tag_id]);
+              await pool.query(
+                'INSERT INTO book_tags (book_id, tag_id) VALUES ?',
+                [tagValues]
+              );
+            }
+          }
+
+          results.success.push({
+            row: rowNum,
+            book_id,
+            title: title
+          });
+
+        } catch (err) {
+          results.errors.push({
+            row: rowNum,
+            error: err.message
+          });
+        }
+      }
+
+      res.json({
+        message: `Processed ${csvRows.length} rows`,
+        success: results.success.length,
+        errors: results.errors.length,
+        details: results
+      });
+
+    } catch (err) {
+      console.error('Error uploading CSV:', err);
       res.status(500).json({ error: err.message });
     }
   },

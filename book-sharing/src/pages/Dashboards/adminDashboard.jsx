@@ -5,7 +5,7 @@ import logo from "../../assests/images/logo.png";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { Link, useNavigate, Outlet, useLocation } from "react-router-dom";
 
-import books1Image from "../../assests/images/books1.jpg"; // Import the image for the dashboard section
+import books1Image from "../../assests/images/books1.png"; // Import the image for the dashboard section
 
 
 // Import axiosConfig for API calls
@@ -97,7 +97,16 @@ function Dashboard() {
     if (savedState !== null) {
       setSidebarCollapsed(savedState === "true");
     }
-
+    
+    // Listen for sidebar toggle events from child components
+    const handleSidebarToggle = (event) => {
+      if (event.detail && typeof event.detail.collapsed === 'boolean') {
+        setSidebarCollapsed(event.detail.collapsed);
+      }
+    };
+    
+    window.addEventListener('sidebar-toggle', handleSidebarToggle);
+    
     // --- Fetch Dashboard Stats on component mount if on dashboard home ---
     if (isDashboardHome) {
       const fetchDashboardStats = async () => {
@@ -129,6 +138,8 @@ function Dashboard() {
       };
       fetchDashboardStats();
     }
+    
+    return () => window.removeEventListener('sidebar-toggle', handleSidebarToggle);
   }, [isDashboardHome]);
 
   const toggleSidebar = () => {

@@ -113,7 +113,7 @@ function BookDetailCard({
           <button className="btn-learn-more" onClick={() => onRequestAccess(book.book_id || book.id)}>Request Access</button>
         )}
       </div>
-      <div className="footer-text">© 2025 Byline Learning Solutions LLP</div>
+      <div className="footer-text">© 2025-2026 Kodeit</div>
     </div>
   );
 }

@@ -378,10 +378,9 @@
   right: 0;
   height: 100%;
   width: 100%;
-  background: url('../assests/images/backgroundImage.jpg') no-repeat center center;
   background-size: cover;
   z-index: 0;
-  opacity: 1;
+  opacity: 0.7;
 
 }
 
@@ -391,7 +390,6 @@
   grid-template-columns: 1fr;
   gap: 2.5rem;
   padding: 2rem;
-  background: rgba(114, 164, 238, 0.1); /* semi-transparent blue */
   color: #e0e7ff;
 }
  
@@ -567,7 +565,7 @@
 .dashboard-stats-card:hover {
   transform: translateY(-8px) scale(1.02); /* More pronounced lift and slight scale for engagement */
   box-shadow: 0 15px 45px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05); /* Deeper shadow on hover */
-  border-color: rgba(0, 123, 255, 0.3); /* Subtle blue border on hover */
+  border- : rgba(196, 196, 196, 0.3); /* Subtle blue border on hover */
 }
  
 /* Style for the icon container within the card */

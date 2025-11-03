@@ -591,7 +591,7 @@ function BookDetail({ group, onGoBack }) {
             </button>
           )}
         </div>
-        <div className="footer-text">© 2025 ByLine Learning Solutions LLP</div>
+        <div className="footer-text">© 2025-2026 Kodeit</div>
       </div>
     </div>
   );

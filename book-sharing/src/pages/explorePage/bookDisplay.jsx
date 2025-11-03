@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from '../../axiosConfig';
 import '../../styles/explorePageCss/bookDisplay.css';
 import PDFCoverPreview from '../../components/PDFCoverPreview';
@@ -16,6 +16,8 @@ const Books = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [selectedBook, setSelectedBook] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showIframe, setShowIframe] = useState(false);
+  const [iframeUrl, setIframeUrl] = useState(null);
 
   // State for the modal's description expand/collapse feature
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -93,11 +95,24 @@ const Books = () => {
           book_type_title: book.book_type_title,
           country_name: book.country_name,
           tags: book.tags,
+          url: book.url || null, // Preserve URL field for Heyzine API fallback
         };
       }
       const formatName = (book.format_name || '').toLowerCase();
-      if (formatName.includes('digital')) grouped[key].digital = book;
-      if (formatName.includes('print')) grouped[key].print = book;
+      if (formatName.includes('digital')) {
+        grouped[key].digital = book;
+        // If digital has URL and grouped doesn't, use it
+        if (book.url && !grouped[key].url) {
+          grouped[key].url = book.url;
+        }
+      }
+      if (formatName.includes('print')) {
+        grouped[key].print = book;
+        // If print has URL and grouped doesn't, use it
+        if (book.url && !grouped[key].url) {
+          grouped[key].url = book.url;
+        }
+      }
     }
     return Object.values(grouped);
   }
@@ -183,6 +198,27 @@ const Books = () => {
     }
   };
 
+  // Handle Escape key to close iframe
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showIframe) {
+        setShowIframe(false);
+        setIframeUrl(null);
+      }
+    };
+    if (showIframe) {
+      document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll when iframe is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'auto';
+    };
+  }, [showIframe]);
+
   // Logic for "Read More" button, calculated only when a book is selected
   let truncatedDescription = '';
   let isLongDescription = false;
@@ -259,6 +295,11 @@ const Books = () => {
           {filteredBooks.length === 0 ? (<p className="bookx-no-books">No books match selected filters.</p>) : (
             filteredBooks.map((group) => {
               const main = group.digital || group.print;
+              // Ensure URL is available from group or main book
+              const bookUrl = group.url || main?.url || null;
+              if (main && !main.url && bookUrl) {
+                main.url = bookUrl;
+              }
               return (
                 <div key={group.title + group.isbn_code + group.grade_id + group.version_label} className="bookx-card" onClick={() => handleSelectBook(main)}>
                   <div className="bookx-card-image-container">
@@ -302,6 +343,66 @@ const Books = () => {
         </div>
       </div>
      
+      {/* Iframe Overlay for Reading Book */}
+      {showIframe && iframeUrl && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: '#fff',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          {/* Close Button Bar */}
+          <div style={{
+            padding: '10px 20px',
+            backgroundColor: '#f8f9fa',
+            borderBottom: '1px solid #e2e8f0',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}>
+            <button
+              onClick={() => {
+                setShowIframe(false);
+                setIframeUrl(null);
+              }}
+              style={{
+                padding: '8px 20px',
+                backgroundColor: '#dc3545',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 600,
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#c82333'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#dc3545'}
+            >
+              Close
+            </button>
+          </div>
+          {/* Iframe */}
+          <iframe
+            src={iframeUrl}
+            style={{
+              width: '100%',
+              height: 'calc(100vh - 60px)',
+              border: 'none',
+              flex: 1
+            }}
+            title="Book Reader"
+            allowFullScreen
+          />
+        </div>
+      )}
+
       {selectedBook && (
         <div className="bookx-details-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
           <div className="bookx-details-container">
@@ -374,11 +475,28 @@ const Books = () => {
     <button 
       className="btn btn-primary" 
       onClick={() => {
-        // Check URL from selectedBook
-        const url = selectedBook.url;
+        // Check URL from selectedBook or from the grouped book data
+        // First try selectedBook.url, then check if we need to look it up from the grouped books
+        let url = selectedBook.url;
+        
+        // If no URL in selectedBook, try to find it from the grouped books
+        if (!url) {
+          const foundGroup = books.find(group => {
+            const main = group.digital || group.print;
+            return main && main.book_id === selectedBook.book_id;
+          });
+          if (foundGroup) {
+            url = foundGroup.url || foundGroup.digital?.url || foundGroup.print?.url;
+          }
+        }
+        
         if (url) {
-          // If URL exists, open it in a new tab
-          window.open(url, '_blank', 'noopener,noreferrer');
+          // Set URL and show iframe overlay
+          setIframeUrl(url);
+          setShowIframe(true);
+          // Close sidebar automatically by setting localStorage and dispatching event
+          localStorage.setItem("sidebarCollapsed", "true");
+          window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { collapsed: true } }));
         } else {
           // Show alert if no URL is available
           alert('This book does not have a URL configured. Please contact the administrator.');

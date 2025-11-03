@@ -3,7 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate, Link, Outlet, useLocation } from "react-router-dom";
 import "../../styles/userDashboard.css";
 import logo from "../../assests/images/logo.png";
-import img1 from "../../assests/images/img1.jpg";
+import img1 from "../../assests/images/img1.png";
 import { FaUserCircle, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import axios from "../../axiosConfig";
  

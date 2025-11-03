@@ -7,11 +7,30 @@ const allowedTypes = [
   'image/jpeg',
   'image/png',
   'application/zip',
-  'application/x-zip-compressed'
+  'application/x-zip-compressed',
+  'text/csv',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain'
 ];
 
 // Common file filter
 const fileFilter = (req, file, cb) => {
+  // Allow CSV, XLS, XLSX files for CSV uploads
+  if (file.fieldname === 'csv_file') {
+    const fileName = file.originalname.toLowerCase();
+    const validExtensions = ['.csv', '.xls', '.xlsx'];
+    const isValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (allowedTypes.includes(file.mimetype) || isValidExtension) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only CSV, XLS, or XLSX files are allowed for uploads!'), false);
+    }
+    return;
+  }
+  
+  // Original filter for other file types
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {

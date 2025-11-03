@@ -77,6 +77,29 @@ const PDFCoverPreview = React.memo(({ pdfUrl, width = 200, height = 260, bookTit
           headers: { Authorization: `Bearer ${token}` },
         });
         
+        // Check if response is an image (from Heyzine API)
+        const contentType = response.headers['content-type'] || '';
+        if (contentType.startsWith('image/')) {
+          // Convert arraybuffer to blob and create object URL
+          const blob = new Blob([response.data], { type: contentType });
+          const imageUrl = URL.createObjectURL(blob);
+          
+          // Also convert to data URL for caching
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const imageDataUrl = reader.result;
+            coverImageCache.set(pdfUrl, imageDataUrl);
+            if (!cancelled) {
+              setCachedImageUrl(imageDataUrl);
+              setLoading(false);
+            }
+            URL.revokeObjectURL(imageUrl);
+          };
+          reader.readAsDataURL(blob);
+          return;
+        }
+        
+        // Otherwise, treat as PDF and render first page
         const loadingTask = pdfjsLib.getDocument({ data: response.data });
         const pdf = await loadingTask.promise;
         const page = await pdf.getPage(1);

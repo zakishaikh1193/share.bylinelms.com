@@ -96,6 +96,62 @@ const BooksTable = () => {
     }
   };
 
+  const handleCSVUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.csv') && !fileName.endsWith('.xls') && !fileName.endsWith('.xlsx')) {
+      alert('Please upload a CSV, XLS, or XLSX file');
+      return;
+    }
+
+    if (!window.confirm(`Upload ${file.name}? This will create book entries from the CSV data.`)) {
+      e.target.value = ''; // Reset file input
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('csv_file', file);
+
+      const response = await axios.post('/api/books/upload-csv', formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const { success, errors, details } = response.data;
+      
+      let message = `Upload completed!\n`;
+      message += `✅ Successfully created: ${success} books\n`;
+      if (errors > 0) {
+        message += `❌ Errors: ${errors} rows\n\n`;
+        message += `Error details:\n`;
+        details.errors.slice(0, 10).forEach(err => {
+          message += `Row ${err.row}: ${err.error}\n`;
+        });
+        if (details.errors.length > 10) {
+          message += `... and ${details.errors.length - 10} more errors`;
+        }
+      }
+
+      alert(message);
+      
+      // Refresh the books list
+      await fetchData();
+    } catch (err) {
+      console.error('Error uploading CSV:', err);
+      alert(err.response?.data?.error || 'Failed to upload CSV file');
+    } finally {
+      setLoading(false);
+      e.target.value = ''; // Reset file input
+    }
+  };
+
   // Popover component using React Portal
   function Popover({ anchorEl, onClose, children }) {
     const popoverRef = useRef();
@@ -169,9 +225,21 @@ const BooksTable = () => {
           ← Back
         </button>
 
-        <button className="books-table-add-btn" onClick={() => navigate('/admin/add-book')}>
-          + Add Book
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="books-table-add-btn" onClick={() => navigate('/admin/add-book')}>
+            + Add Book
+          </button>
+          <label htmlFor="csv-upload" className="books-table-add-btn" style={{ cursor: 'pointer', margin: 0 }}>
+            📄 Upload CSV/Excel
+          </label>
+          <input
+            id="csv-upload"
+            type="file"
+            accept=".csv,.xls,.xlsx"
+            style={{ display: 'none' }}
+            onChange={handleCSVUpload}
+          />
+        </div>
       </div>
 
       <h2 className="books-table-title">Books List</h2>
