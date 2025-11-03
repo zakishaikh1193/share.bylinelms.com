@@ -226,9 +226,9 @@ const BooksTable = () => {
         </button>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="books-table-add-btn" onClick={() => navigate('/admin/add-book')}>
-            + Add Book
-          </button>
+        <button className="books-table-add-btn" onClick={() => navigate('/admin/add-book')}>
+          + Add Book
+        </button>
           <label htmlFor="csv-upload" className="books-table-add-btn" style={{ cursor: 'pointer', margin: 0 }}>
             📄 Upload CSV/Excel
           </label>

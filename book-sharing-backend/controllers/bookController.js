@@ -107,21 +107,21 @@ streamOptimizedCover: async (req, res) => {
       if (fs.existsSync(pdfPath)) {
         try {
           const pdfBytes = fs.readFileSync(pdfPath);
-          const pdfDoc = await PDFDocument.load(pdfBytes);
+    const pdfDoc = await PDFDocument.load(pdfBytes);
           
           if (pdfDoc.getPageCount() > 0) {
-            const coverDoc = await PDFDocument.create();
-            const [firstPage] = await coverDoc.copyPages(pdfDoc, [0]);
-            coverDoc.addPage(firstPage);
-            const coverBytes = await coverDoc.save();
+    const coverDoc = await PDFDocument.create();
+    const [firstPage] = await coverDoc.copyPages(pdfDoc, [0]);
+    coverDoc.addPage(firstPage);
+    const coverBytes = await coverDoc.save();
 
-            // Cache the generated cover
-            fs.writeFileSync(cachePath, coverBytes);
+    // Cache the generated cover
+    fs.writeFileSync(cachePath, coverBytes);
 
-            res.setHeader("Content-Type", "application/pdf");
-            res.setHeader("Content-Length", coverBytes.length);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Length", coverBytes.length);
             res.setHeader("Cache-Control", "public, max-age=86400");
-            res.send(Buffer.from(coverBytes));
+    res.send(Buffer.from(coverBytes));
             return;
           }
         } catch (pdfErr) {
@@ -215,10 +215,10 @@ streamOptimizedCover: async (req, res) => {
     );
 
     if (cover && cover.uploaded_link) {
-      const filePath = path.resolve(__dirname, "..", cover.uploaded_link);
+    const filePath = path.resolve(__dirname, "..", cover.uploaded_link);
       if (fs.existsSync(filePath)) {
-        res.setHeader("Content-Type", "application/pdf");
-        fs.createReadStream(filePath).pipe(res);
+    res.setHeader("Content-Type", "application/pdf");
+    fs.createReadStream(filePath).pipe(res);
         return;
       }
     }
@@ -948,16 +948,16 @@ downloadBookVersion: async (req, res) => {
 
     // Step 3: Try to stream file directly
     const filePath = version.uploaded_link;
-    
+
     if (filePath && fs.existsSync(filePath)) {
       // File exists, stream it directly
-      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-      // --- LOG ACTIVITY ---
-      logActivity(user_id, 'DOWNLOAD_PDF', { bookId: parseInt(bookId), bookTitle, versionLabel }, ip);
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    // --- LOG ACTIVITY ---
+    logActivity(user_id, 'DOWNLOAD_PDF', { bookId: parseInt(bookId), bookTitle, versionLabel }, ip);
 
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="${path.basename(filePath)}"`);
-      fs.createReadStream(filePath).pipe(res);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${path.basename(filePath)}"`);
+    fs.createReadStream(filePath).pipe(res);
       return;
     }
 
@@ -1535,18 +1535,18 @@ approveAccessRequest: async (req, res) => {
 
       // Base query parts
       const selectFields = `
-        b.book_id, b.title, b.description, b.grade_id, g.grade_level,
-        b.subject_id, s.subject_name,
-        b.language_id, l.language_name,
-        b.standard_id, std.standard_name,
-        b.country_id, ctry.country_name,
-        b.booktype_id, bt.book_type_title,
-        b.format_id, bf.format_name,
+          b.book_id, b.title, b.description, b.grade_id, g.grade_level,
+          b.subject_id, s.subject_name,
+          b.language_id, l.language_name,
+          b.standard_id, std.standard_name,
+          b.country_id, ctry.country_name,
+          b.booktype_id, bt.book_type_title,
+          b.format_id, bf.format_name,
         b.url,
-        b.created_by, b.created_at,
-        b.last_updated_at,
-        c.uploaded_link AS cover,
-        bv.version_label, bv.isbn_code,
+          b.created_by, b.created_at,
+          b.last_updated_at,
+          c.uploaded_link AS cover,
+          bv.version_label, bv.isbn_code,
         bv.zip_link,
         CASE WHEN c.uploaded_link IS NOT NULL THEN 1 ELSE 0 END AS has_cover
       `;

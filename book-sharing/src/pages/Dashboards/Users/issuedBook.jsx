@@ -429,22 +429,29 @@ function BookDetail({ group, onGoBack }) {
             </table>
           </div>
           <div className="book-image-container book-image-center-vertical book-image-lower-right">
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
-              <PDFCoverPreview
-                pdfUrl={`/api/books/${main.book_id}/stream-cover`}
-                width={300}
-                height={360}
-                bookTitle={group.title}
-              />
-              {/* File size info */}
-              <div className="book-size-info" style={{ marginTop: '1.2em', textAlign: 'center', fontSize: '0.98em', color: '#64748b' }}>
-                {pdfSize !== null && (
-                  <div><span className="size-label">PDF</span> <span className="size-value">{pdfSize ? (pdfSize / 1024 / 1024).toFixed(2) + ' MB' : 'N/A'}</span></div>
-                )}
-                {zipSize !== null && (
-                  <div><span className="size-label">ZIP</span> <span className="size-value">{zipSize ? (zipSize / 1024 / 1024).toFixed(2) + ' MB' : 'N/A'}</span></div>
-                )}
+            <div className="book-cover-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', width: 'auto' }}>
+              <div 
+                onClick={handleReadBook}
+                style={{ cursor: 'pointer' }}
+                title="Click to read book"
+              >
+                <PDFCoverPreview
+                  pdfUrl={`/api/books/${main.book_id}/stream-cover`}
+                  height={400}
+                  bookTitle={group.title}
+                />
               </div>
+              {/* File size info - only show if size data exists */}
+              {(pdfSize !== null && pdfSize > 0) || (zipSize !== null && zipSize > 0) ? (
+                <div className="book-size-info" style={{ marginTop: '1.2em', textAlign: 'center', fontSize: '0.98em', color: '#64748b' }}>
+                  {pdfSize !== null && pdfSize > 0 && (
+                    <div><span className="size-label">PDF</span> <span className="size-value">{(pdfSize / 1024 / 1024).toFixed(2)} MB</span></div>
+                  )}
+                  {zipSize !== null && zipSize > 0 && (
+                    <div><span className="size-label">ZIP</span> <span className="size-value">{(zipSize / 1024 / 1024).toFixed(2)} MB</span></div>
+                  )}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -709,6 +716,7 @@ const Books = () => {
                       onClick={() => setSelectedGroup(group)}
                       style={{ cursor: "pointer", minHeight: 480, maxHeight: 1000, width: 380, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', borderRadius: 18, boxShadow: '0 2px 12px rgba(30,58,138,0.07)', background: '#fff', margin: '0.5rem', padding: '0.2rem 0.2rem 0.2rem 0.2rem', transition: 'box-shadow 0.2s' }}
                     >
+                      <div className="book-card-issued-image-container">
                       {bookId && (
                         <PDFCoverPreview
                           pdfUrl={`/api/books/${bookId}/stream-cover`}
@@ -717,6 +725,7 @@ const Books = () => {
                           bookTitle={group.title}
                         />
                       )}
+                      </div>
                       <div className="book-card-issued-content" style={{ width: '100%', marginTop: 18 }}>
                         <h3 className="book-card-issued-title" style={{ fontSize: '1.18rem', fontWeight: 700, marginBottom: 6 }}>{group.title}</h3>
                         <div className="book-card-issued-subtitle" style={{ minHeight: 24, maxHeight: 40, overflow: 'hidden' }}

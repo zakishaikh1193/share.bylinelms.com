@@ -402,7 +402,7 @@ const Books = () => {
           />
         </div>
       )}
-
+     
       {selectedBook && (
         <div className="bookx-details-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
           <div className="bookx-details-container">

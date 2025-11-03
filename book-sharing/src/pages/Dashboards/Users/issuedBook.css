@@ -960,7 +960,7 @@ body {
   border-radius: 0.6rem;
   box-shadow: 0 5px 12px rgba(0, 0, 0, 0.1);
   border: 2px solid #e5e7eb;
-  object-fit: contain;
+  object-fit: cover;
 }
  
 .issued-books .submit-button {
@@ -1796,17 +1796,135 @@ body {
   width: 120px; /* Fixed width for labels */
 }
 
-/* --- Book Cover & File Size --- */
-.book-image-container .pdf-cover-preview { /* Assuming your PDFCoverPreview renders a div with this class */
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  margin-bottom: 15px;
-  overflow: hidden; /* Ensures the border-radius is respected by the inner canvas/image */
+/* --- Book Cover & File Size with 3D Effect --- */
+.book-image-container {
+  perspective: 1200px; /* Create 3D perspective for the container */
+  perspective-origin: center center;
+  max-width: 400px; /* Constrain container width */
+  width: 100%; /* Take available space but respect max-width */
+}
+
+.book-cover-wrapper {
+  transform-style: preserve-3d;
+  width: fit-content; /* Let wrapper adapt to content */
+  max-width: 100%; /* Don't exceed parent */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.book-card-issued-image-container:hover{
+  transform: rotateY(-6deg) rotateX(1.5deg) translateZ(12px);
+}
+
+/* Target the PDFCoverPreview root div - it's the direct child of the book-cover-wrapper, but NOT the size info */
+.book-cover-wrapper > div:not(.book-size-info) {
+  position: relative;
+  border-radius: 12px 4px 4px 12px !important; /* Curved edges - more rounded on left, less on right */
+  box-shadow: 
+    -8px 8px 20px rgba(0, 0, 0, 0.25), /* Deep shadow on the left for depth */
+    -4px 4px 10px rgba(0, 0, 0, 0.15), /* Medium shadow */
+    -2px 2px 5px rgba(0, 0, 0, 0.1),  /* Subtle shadow */
+    inset -2px 0 8px rgba(0, 0, 0, 0.1) !important; /* Inner shadow on left edge for spine effect */
+  overflow: visible !important; /* Allow back cover to show */
+  transform: 
+    rotateY(-8deg) /* Slight 3D rotation to show depth */
+    rotateX(2deg)  /* Very slight tilt */
+    translateZ(20px); /* Lift it off the page */
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
+  background: transparent !important; /* No background - let image show through */
+  border: none !important; /* Remove border initially */
+  max-width: 100% !important; /* Prevent overflow */
+  box-sizing: border-box !important;
+  z-index: 2; /* Front cover should be above back cover */
+  cursor: pointer; /* Make it clear the book cover is clickable */
+}
+
+/* Hover effect for clickable book cover */
+.book-cover-wrapper > div:not(.book-size-info):hover {
+  transform: 
+    rotateY(-10deg) /* Slightly more rotation on hover */
+    rotateX(2deg)
+    translateZ(25px) /* Lift a bit more */
+    scale(1.01); /* Slight scale up on hover */
+}
+
+/* Create back cover illusion using ::before pseudo-element */
+.book-cover-wrapper > div:not(.book-size-info)::before {
+  content: '';
+  position: absolute;
+  top: 2%;
+  left: 1%;
+  width: 101%;
+  height: 100%;
+  background: linear-gradient(135deg, #adadad 0%, #acacac 50%, #b9b9b9 100%); /* Subtle grey gradient for back cover */
+  border-radius: 12px 4px 4px 12px;
+  /* Position back cover behind - offset to right and slightly down */
+  transform:  
+    rotateY(-8deg)
+    rotateX(2deg)
+    translateX(8px) /* Shift to the right (back) */
+    translateY(4px) /* Slight downward shift */
+    translateZ(-15px) /* Push it behind the front cover */
+    scale(0.98); /* Slightly smaller to show depth */
+  z-index: -1; /* Behind the front cover */
+  box-shadow: 
+    -6px 6px 15px rgba(0, 0, 0, 0.2),
+    inset 0 0 20px rgba(0, 0, 0, 0.05); /* Subtle inner shadow */
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover effect to enhance 3D appearance - only on book cover, not size info */
+.book-image-container:hover .book-cover-wrapper > div:not(.book-size-info) {
+  transform: 
+    rotateY(-12deg) /* More rotation on hover */
+    rotateX(3deg)
+    translateZ(30px) /* Lift more */
+    scale(1.02); /* Slight scale up */
+  box-shadow: 
+    -12px 12px 30px rgba(0, 0, 0, 0.3),
+    -6px 6px 15px rgba(0, 0, 0, 0.2),
+    -3px 3px 8px rgba(0, 0, 0, 0.15),
+    inset -3px 0 10px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Back cover hover effect - more visible on hover */
+.book-image-container:hover .book-cover-wrapper > div:not(.book-size-info)::before {
+  transform: 
+    rotateY(-12deg)
+    rotateX(3deg)
+    translateX(12px) /* More offset on hover */
+    translateY(6px)
+    translateZ(-20px)
+    scale(0.97); /* Slightly more scale difference */
+}
+
+/* Ensure the inner image/canvas respects the border-radius */
+.book-cover-wrapper > div:not(.book-size-info) img,
+.book-cover-wrapper > div:not(.book-size-info) canvas {
+  border-radius: 10px 2px 2px 10px !important; /* Slightly smaller radius for inner content */
+  display: block;
+  position: relative;
+  z-index: 1; /* Above the back cover */
+}
+
+/* Style the loading/error overlay to match 3D effect */
+.book-cover-wrapper > div > div {
+  border-radius: 12px 4px 4px 12px !important;
 }
 
 .book-size-info {
   font-size: 0.9rem;
   color: #64748b;
+  /* Explicitly reset any 3D transforms that might be inherited */
+  transform: none !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important; /* Simple flat shadow only */
+  border-radius: 8px !important; /* Simple rounded corners, no 3D effect */
+  background: #f8fafc !important;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  margin-top: 1.2em;
 }
 .size-label {
   font-weight: 600;
