@@ -559,24 +559,16 @@ getBooks: async (req, res) => {
     `;
  
     if (role === 'admin') {
-      [books] = await pool.query(
-        baseSelect + `
-        WHERE NOT EXISTS (
-          SELECT 1 FROM book_ministry_reviews m
-          WHERE m.book_id = b.book_id AND m.status = 'pending'
-        )`
-      );
+      // Admin can see all books, including those with pending reviews
+      [books] = await pool.query(baseSelect);
+      console.log(`[getBooks] Admin query returned ${books.length} books`);
     } else {
       [books] = await pool.query(
         baseSelect + `
         JOIN book_control bc ON b.book_id = bc.book_id
         WHERE bc.user_id = ?
           AND bc.permission IN ('owner', 'editor', 'viewer')
-          AND (bc.expiry IS NULL OR bc.expiry > NOW())
-          AND NOT EXISTS (
-            SELECT 1 FROM book_ministry_reviews m
-            WHERE m.book_id = b.book_id AND m.status = 'pending'
-          )`,
+          AND (bc.expiry IS NULL OR bc.expiry > NOW())`,
         [user_id]
       );
     }
@@ -606,6 +598,7 @@ getBooks: async (req, res) => {
       book.tags = tagsByBook[book.book_id] || [];
     });
 
+    console.log(`[getBooks] Total books being sent: ${books.length}`);
     res.json({ books });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -736,14 +729,6 @@ getBooks: async (req, res) => {
     const user_id = req.user.user_id;
     const role = req.user.role;
     const { id: book_id } = req.params;
-
-    // Exclude books under ministry review
-    const [reviewed] = await pool.query(
-      `SELECT 1 FROM book_ministry_reviews WHERE book_id = ? AND status = 'pending'`,
-      [book_id]
-    );
-    if (reviewed.length > 0)
-      return res.status(403).json({ error: 'Book is under ministry review' });
 
     // Viewer: check access
     if (role !== 'admin') {
@@ -1217,10 +1202,6 @@ getUserBookAccess: async (req, res) => {
       WHERE b.book_id NOT IN (
         SELECT book_id FROM book_control WHERE user_id = ?
       )
-      AND NOT EXISTS (
-        SELECT 1 FROM book_ministry_reviews m
-        WHERE m.book_id = b.book_id AND m.status = 'pending'
-      )
     `, [user_id]);
     
     // --- 3. Fetch and attach tags for all books ---
@@ -1579,11 +1560,7 @@ approveAccessRequest: async (req, res) => {
 
       if (role === 'admin') {
         [books] = await pool.query(
-          `SELECT ${selectFields} ${fromAndJoins}
-          WHERE NOT EXISTS (
-            SELECT 1 FROM book_ministry_reviews m
-            WHERE m.book_id = b.book_id AND m.status = 'pending'
-          )`
+          `SELECT ${selectFields} ${fromAndJoins}`
         );
       } else {
         [books] = await pool.query(
@@ -1591,11 +1568,7 @@ approveAccessRequest: async (req, res) => {
           JOIN book_control bc ON b.book_id = bc.book_id
           WHERE bc.user_id = ?
             AND bc.permission IN ('owner', 'editor', 'viewer')
-            AND (bc.expiry IS NULL OR bc.expiry > NOW())
-            AND NOT EXISTS (
-              SELECT 1 FROM book_ministry_reviews m
-              WHERE m.book_id = b.book_id AND m.status = 'pending'
-            )`,
+            AND (bc.expiry IS NULL OR bc.expiry > NOW())`,
           [user_id]
         );
       }
@@ -1705,6 +1678,61 @@ approveAccessRequest: async (req, res) => {
         return str.toString().toLowerCase().trim().replace(/\s+/g, '');
       };
 
+      // Helper function to convert scientific notation to plain number string
+      // Handles ISBN numbers that Excel/CSV parsers might read as scientific notation
+      const convertScientificNotation = (value) => {
+        if (value === null || value === undefined) return '';
+        
+        // If it's already a string, check for scientific notation
+        if (typeof value === 'string') {
+          const trimmed = value.trim();
+          // Check if it's in scientific notation (contains 'e' or 'E')
+          if (/[eE][+-]?\d+/.test(trimmed)) {
+            try {
+              // Parse scientific notation: "9.78012e+12" -> "9780120000000"
+              // Split into base and exponent
+              const parts = trimmed.split(/[eE]/);
+              const base = parseFloat(parts[0]);
+              const exponent = parseInt(parts[1] || '0', 10);
+              
+              if (!isNaN(base) && !isNaN(exponent) && isFinite(base) && isFinite(exponent)) {
+                // Calculate the full number
+                const num = base * Math.pow(10, exponent);
+                // Convert to integer string without scientific notation
+                // Use Number.isInteger check and toFixed for precision
+                if (Number.isInteger(num)) {
+                  // For integers, convert directly without decimal
+                  return Math.floor(num).toString();
+                } else {
+                  // For decimals that should be integers (like 9.78012e+12 -> 9780120000000)
+                  // Round to nearest integer since ISBN should be whole number
+                  return Math.round(num).toString();
+                }
+              }
+            } catch (e) {
+              console.warn('Error converting scientific notation:', trimmed, e);
+              return trimmed;
+            }
+          }
+          // Remove decimal point and trailing zeros if it's a numeric string
+          return trimmed.replace(/\.0+$/, '');
+        }
+        
+        // If it's a number type, convert to string
+        if (typeof value === 'number') {
+          // For large integers, convert directly to avoid scientific notation
+          if (Number.isInteger(value)) {
+            return value.toString();
+          }
+          // For decimals that represent whole numbers (ISBN), round and convert
+          // Remove trailing decimal and zeros
+          return Math.round(value).toString();
+        }
+        
+        // For any other type, convert to string
+        return String(value).trim();
+      };
+
       // Pre-fetch all lookup tables for efficiency
       const [grades] = await pool.query('SELECT grade_id, grade_level FROM grades');
       const [subjects] = await pool.query('SELECT subject_id, subject_name FROM subjects');
@@ -1797,6 +1825,7 @@ approveAccessRequest: async (req, res) => {
             return cleaned.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
           };
 
+          const rawIsbn = getValue('ISBN', 'isbn', 'ISBN ', 'isbn ', 'ISBN\t', 'isbn\t');
           csvRows.push({
             title: getValue('Book title', 'Book Title', 'Title', 'book title', 'BOOK TITLE'),
             description: getValue('Description', 'description', 'DESCRIPTION'),
@@ -1807,7 +1836,7 @@ approveAccessRequest: async (req, res) => {
             bookType: getValue('Book Type', 'Book type', 'book type', 'BookType', 'booktype', 'BOOK TYPE'),
             format: getValue('Book Formats', 'Book Format', 'Format', 'format', 'FORMAT', 'book formats', 'book format'),
             version: getValue('Version', 'version', 'VERSION'),
-            isbn: getValue('ISBN', 'isbn', 'ISBN ', 'isbn ', 'ISBN\t', 'isbn\t'),
+            isbn: convertScientificNotation(rawIsbn),
             url: getValue('URL', 'url', 'Url', 'URL '),
             tags: parseTags(getValue('Tags', 'tags', 'TAGS', 'Tag', 'tag'))
           });
@@ -1876,6 +1905,7 @@ approveAccessRequest: async (req, res) => {
                 return cleaned.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
               };
 
+              const rawIsbn = getValue('ISBN', 'isbn', 'ISBN ', 'isbn ', 'ISBN\t', 'isbn\t');
               csvRows.push({
                 title: getValue('Book title', 'Book Title', 'Title', 'book title', 'BOOK TITLE'),
                 description: getValue('Description', 'description', 'DESCRIPTION'),
@@ -1886,7 +1916,7 @@ approveAccessRequest: async (req, res) => {
                 bookType: getValue('Book Type', 'Book type', 'book type', 'BookType', 'booktype', 'BOOK TYPE'),
                 format: getValue('Book Formats', 'Book Format', 'Format', 'format', 'FORMAT', 'book formats', 'book format'),
                 version: getValue('Version', 'version', 'VERSION'),
-                isbn: getValue('ISBN', 'isbn', 'ISBN ', 'isbn ', 'ISBN\t', 'isbn\t'),
+                isbn: convertScientificNotation(rawIsbn),
                 url: getValue('URL', 'url', 'Url', 'URL '),
                 tags: parseTags(getValue('Tags', 'tags', 'TAGS', 'Tag', 'tag'))
               });
@@ -1908,7 +1938,8 @@ approveAccessRequest: async (req, res) => {
           // Extract and validate required fields
           const title = (row.title || '').toString().trim();
           const version = (row.version || '').toString().trim();
-          const isbn = (row.isbn || '').toString().trim();
+          // ISBN should already be converted, but apply conversion again as safety measure
+          const isbn = convertScientificNotation(row.isbn || '').trim();
           
           if (!title || !version || !isbn) {
             const missing = [];
